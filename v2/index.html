@@ -1,0 +1,3234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小鹿 AI 拆书工坊 V2.0 - 首席战略官决策工作台</title>
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Third-party Libraries via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ==========================================================================
+       V2.0 Premium Design System & Typography
+       ========================================================================== */
+    :root {
+      --font-display: 'Outfit', 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+      --font-body: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+      
+      --bg-gradient: radial-gradient(circle at 50% 50%, #0d121f 0%, #060913 100%);
+      --glass-bg: rgba(13, 20, 38, 0.45);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-hover: rgba(255, 255, 255, 0.12);
+      
+      --cyan-neon: #00f2fe;
+      --blue-neon: #4facfe;
+      --purple-neon: #b152ff;
+      --green-neon: #00ff87;
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dark: #0f172a;
+      
+      --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    
+    /* Scrollbar Optimization */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    /* Layout Framework */
+    #app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+    
+    header {
+      background: rgba(6, 9, 19, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+    
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-icon {
+      font-size: 28px;
+      animation: logoPulse 3s infinite ease-in-out;
+    }
+    
+    .logo-text h1 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 22px;
+      background: linear-gradient(135deg, var(--cyan-neon) 0%, var(--blue-neon) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+    
+    .logo-text span {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+      display: block;
+    }
+    
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 13px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-base);
+      border: 1px solid transparent;
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .btn:hover {
+      background: var(--glass-hover);
+      transform: translateY(-1px);
+    }
+    
+    .btn.primary {
+      background: linear-gradient(135deg, var(--cyan-neon) 0%, var(--blue-neon) 100%);
+      color: var(--text-dark);
+      border: none;
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.35);
+    }
+    
+    .btn.primary:hover {
+      box-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+      transform: translateY(-2px);
+    }
+    
+    .btn.purple {
+      background: linear-gradient(135deg, var(--purple-neon) 0%, var(--blue-neon) 100%);
+      border: none;
+      box-shadow: 0 0 15px rgba(177, 82, 255, 0.35);
+    }
+
+    .btn.purple:hover {
+      box-shadow: 0 0 25px rgba(177, 82, 255, 0.6);
+      transform: translateY(-2px);
+    }
+
+    /* Main Workspace Split Grid */
+    #app-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    /* Left Panel: Input & Workspace Switcher */
+    #sidebar-panel {
+      background: rgba(8, 12, 24, 0.65);
+      border-right: 1px solid var(--glass-border);
+      backdrop-filter: blur(30px);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 24px;
+    }
+    
+    .panel-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: var(--transition-base);
+    }
+    
+    .panel-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+    
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-left: 3px solid var(--cyan-neon);
+      padding-left: 8px;
+    }
+    
+    /* Form elements */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    
+    .form-control {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      color: var(--text-main);
+      padding: 10px 14px;
+      font-size: 13px;
+      outline: none;
+      transition: var(--transition-base);
+    }
+    
+    .form-control:focus {
+      border-color: var(--cyan-neon);
+      box-shadow: 0 0 8px rgba(0, 242, 254, 0.25);
+    }
+    
+    textarea.form-control {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    /* Workspace selector */
+    .workspace-switcher {
+      display: flex;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    
+    .switcher-tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-base);
+      color: var(--text-muted);
+    }
+    
+    .switcher-tab.active {
+      background: var(--glass-hover);
+      color: var(--text-main);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Right Panel: Multiple tabs for Preview and Advanced Features */
+    #main-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .tab-bar {
+      background: rgba(6, 9, 19, 0.6);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 56px;
+      z-index: 10;
+      overflow-x: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    
+    .tab-bar::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .tab-item {
+      padding: 18px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition-base);
+      font-family: var(--font-display);
+      white-space: nowrap;
+    }
+    
+    .tab-item:hover {
+      color: var(--text-main);
+    }
+    
+    .tab-item.active {
+      color: var(--cyan-neon);
+    }
+    
+    .tab-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 16px;
+      right: 16px;
+      height: 2px;
+      background: var(--cyan-neon);
+      box-shadow: 0 0 8px var(--cyan-neon);
+    }
+    
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    .panel-view {
+      display: none;
+      height: 100%;
+      padding: 32px;
+    }
+    
+    .panel-view.active {
+      display: block;
+    }
+    
+    /* Custom split layout inside tab views */
+    .view-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 32px;
+      height: 100%;
+    }
+
+    /* ==========================================================================
+       3D Flashcard Anki Styling
+       ========================================================================== */
+    .flashcards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      padding: 8px;
+    }
+    
+    .flashcard-wrapper {
+      perspective: 1000px;
+      height: 220px;
+      cursor: pointer;
+    }
+    
+    .flashcard {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+    
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-face.front {
+      background: rgba(15, 23, 42, 0.7);
+      justify-content: space-between;
+    }
+    
+    .card-face.front::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--cyan-neon) 0%, var(--blue-neon) 100%);
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .card-face.back {
+      background: rgba(13, 20, 38, 0.95);
+      transform: rotateY(180deg);
+      border-color: rgba(0, 242, 254, 0.3);
+      justify-content: flex-start;
+      gap: 12px;
+      overflow-y: auto;
+    }
+    
+    .card-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--cyan-neon);
+      letter-spacing: 1px;
+    }
+    
+    .card-front-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+    
+    .card-front-footer {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .card-back-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--cyan-neon);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 6px;
+    }
+    
+    .card-back-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-main);
+    }
+    
+    .card-back-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* ==========================================================================
+       AI Double Debate UI
+       ========================================================================== */
+    .debate-setup {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .debate-console {
+      height: 480px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .debate-messages {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .debate-bubble {
+      display: flex;
+      gap: 16px;
+      max-width: 80%;
+    }
+    
+    .debate-bubble.left {
+      align-self: flex-start;
+    }
+    
+    .debate-bubble.right {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    
+    .debate-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .debate-bubble.left .debate-avatar {
+      background: linear-gradient(135deg, var(--cyan-neon), var(--blue-neon));
+    }
+    
+    .debate-bubble.right .debate-avatar {
+      background: linear-gradient(135deg, var(--purple-neon), var(--blue-neon));
+    }
+    
+    .debate-content {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    
+    .debate-bubble.right .debate-content {
+      background: rgba(177, 82, 255, 0.1);
+      border-color: rgba(177, 82, 255, 0.2);
+    }
+    
+    .debate-author-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cyan-neon);
+      margin-bottom: 6px;
+    }
+    
+    .debate-bubble.right .debate-author-name {
+      color: var(--purple-neon);
+    }
+    
+    /* ==========================================================================
+       Strategy Sandbox Simulator
+       ========================================================================== */
+    .sandbox-metrics {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 32px;
+      margin-bottom: 32px;
+    }
+    
+    .success-dial-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    
+    .dial-svg {
+      width: 140px;
+      height: 140px;
+    }
+    
+    .dial-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.05);
+      stroke-width: 10;
+    }
+    
+    .dial-fill {
+      fill: none;
+      stroke: url(#dial-gradient);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 377;
+      stroke-dashoffset: 377;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .dial-text {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      fill: #ffffff;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    
+    .sandbox-chart-container {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 24px;
+      height: 280px;
+      position: relative;
+    }
+    
+    /* ==========================================================================
+       Roundtable Author Lobby
+       ========================================================================== */
+    .chat-lobby {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 24px;
+      height: 520px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+      overflow: hidden;
+    }
+    
+    .lobby-sidebar {
+      background: rgba(0, 0, 0, 0.25);
+      border-right: 1px solid var(--glass-border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .chat-input-bar {
+      border-top: 1px solid var(--glass-border);
+      padding: 16px 24px;
+      display: flex;
+      gap: 12px;
+    }
+    
+    /* ==========================================================================
+       Immersive Fullscreen Reading Optimized Overlay
+       ========================================================================== */
+    #fullscreen-workspace {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #0f1626 0%, #060913 100%);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+    }
+    
+    #fullscreen-workspace.active {
+      display: flex;
+    }
+    
+    .fs-header {
+      background: rgba(8, 12, 24, 0.9);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 18px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(25px);
+    }
+    
+    .fs-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+    }
+    
+    .fs-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      overflow: hidden;
+    }
+    
+    .fs-reading-panel {
+      overflow-y: auto;
+      padding: 60px 80px;
+      display: flex;
+      justify-content: center;
+    }
+    
+    .fs-article {
+      max-width: 820px;
+      width: 100%;
+      font-size: 16.5px;
+      line-height: 2.0; /* Highly optimized line height */
+      color: #e2e8f0;
+      letter-spacing: 0.3px;
+    }
+    
+    .fs-article h1, .fs-article h2, .fs-article h3 {
+      font-family: var(--font-display);
+      color: #ffffff;
+      margin-top: 36px;
+      margin-bottom: 16px;
+    }
+    
+    .fs-article h2 {
+      font-size: 22px;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 8px;
+    }
+    
+    .fs-article p {
+      margin-bottom: 24px;
+    }
+    
+    .fs-sidebar {
+      background: rgba(8, 12, 24, 0.5);
+      border-left: 1px solid var(--glass-border);
+      overflow-y: auto;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    /* Interactive Citations Badge */
+    .ref-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(0, 242, 254, 0.08);
+      border: 1px solid rgba(0, 242, 254, 0.25);
+      color: var(--cyan-neon);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: 4px;
+      font-family: monospace;
+      transition: var(--transition-base);
+    }
+    
+    .ref-badge:hover {
+      background: var(--cyan-neon);
+      color: var(--text-dark);
+      transform: scale(1.08);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+    }
+    
+    .source-excerpt-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 16px;
+      transition: var(--transition-base);
+    }
+    
+    .source-excerpt-card.highlighted {
+      border-color: var(--cyan-neon);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+      background: rgba(0, 242, 254, 0.04);
+    }
+
+    /* Keyframes animations */
+    @keyframes logoPulse {
+      0%, 100% { text-shadow: 0 0 10px rgba(0, 242, 254, 0.2); }
+      50% { text-shadow: 0 0 25px rgba(0, 242, 254, 0.6); }
+    }
+
+    /* General responsive */
+    @media (max-width: 1024px) {
+      #app-body {
+        grid-template-columns: 1fr;
+      }
+      #sidebar-panel {
+        display: none;
+      }
+      .fs-body {
+        grid-template-columns: 1fr;
+      }
+      .fs-sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="logo-area">
+      <div class="logo-icon">🦉</div>
+      <div class="logo-text">
+        <h1>小鹿 AI 拆书工坊 V2.0</h1>
+        <span>CHIEF STRATEGIC OFFICER INTERACTIVE PLATFORM</span>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <button class="btn" id="switchToV1Btn" onclick="location.href='/index.html'">🔙 返回 V1.0</button>
+      <button class="btn" id="openFullscreenBtn">📖 全屏沉淀阅读</button>
+    </div>
+  </header>
+  
+  <!-- Main split workspace -->
+  <div id="app-body">
+    <!-- Left column: Configuration Panel -->
+    <div id="sidebar-panel">
+      <div id="supabase-status-indicator" style="font-size:11px; color:var(--text-muted); margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#94a3b8;" id="supabase-status-dot"></span>
+        <span id="supabase-status-text">正在检查 Supabase 云端同步...</span>
+      </div>
+      
+      <div class="workspace-switcher">
+        <div class="switcher-tab active" id="mode-tab-general">📝 自由材料拆书</div>
+        <div class="switcher-tab" id="mode-tab-weread">📖 微信读书导入</div>
+      </div>
+      
+      <!-- General Form Card -->
+      <div class="panel-card" id="card-general-input">
+        <div class="card-title">📖 书籍基本信息</div>
+        <div class="form-group">
+          <label>书籍名称</label>
+          <input type="text" class="form-control" id="input-title" placeholder="如《从0到1》">
+        </div>
+        <div class="form-group">
+          <label>书籍作者</label>
+          <input type="text" class="form-control" id="input-author" placeholder="如 彼得·蒂尔">
+        </div>
+        <div class="form-group">
+          <label>阅读目标与关注维度</label>
+          <textarea class="form-control" id="input-goal" placeholder="如：我想判断这本书对于小鹿AI编程课程体系建设、续费率提升有什么落地的参考动作。"></textarea>
+        </div>
+        <div class="form-group">
+          <label>业务/工作背景（选填）</label>
+          <textarea class="form-control" id="input-background" placeholder="如：小鹿AI编程业务负责人，关注中低价课程转化与商业化破局。"></textarea>
+        </div>
+        <div class="form-group">
+          <label>导入或贴入书摘/目录/划线（不少于80字）</label>
+          <textarea class="form-control" id="input-materials" placeholder="支持拖拽本地 .txt 或 .md 文件到本输入框..."></textarea>
+        </div>
+        
+        <button class="btn primary" id="generateReportBtn" style="width:100%; justify-content:center; margin-top:8px;">🚀 发起深度拆解</button>
+      </div>
+
+      <!-- WeRead Integration Placeholder -->
+      <div class="panel-card hidden" id="card-weread-input">
+        <div class="card-title">📡 微信读书数据联动</div>
+        <div class="form-group">
+          <button class="btn" id="chkWereadConn" style="width:100%; justify-content:center;">🔗 检查微信读书连接状态</button>
+        </div>
+        <div class="form-group">
+          <button class="btn" id="btnWereadShelf" style="width:100%; justify-content:center;">📚 读取我的书架</button>
+        </div>
+        <div class="form-group">
+          <label>或搜索微信读书库</label>
+          <input type="text" class="form-control" id="wereadSearchKey" placeholder="输入关键词回车搜索">
+        </div>
+        <div class="form-control" id="wereadResultsList" style="min-height:150px; overflow-y:auto; font-size:12px; background:rgba(0,0,0,0.45); padding:8px; margin-bottom:16px;">
+          暂无书架或搜索结果
+        </div>
+        <button class="btn primary" id="generateReportBtnWeRead" style="width:100%; justify-content:center;">🚀 发起深度拆解</button>
+      </div>
+    </div>
+    
+    <!-- Right column: Interactive Views workspace -->
+    <div id="main-panel">
+      <!-- Tabs bar -->
+      <div class="tab-bar">
+        <div class="tab-item active" data-view="view-report">📄 拆书报告</div>
+        <div class="tab-item" data-view="view-flashcards">🎴 Anki闪卡</div>
+        <div class="tab-item" data-view="view-debate">⚔️ 双子辩论</div>
+        <div class="tab-item" data-view="view-sandbox">📊 决策沙盘</div>
+        <div class="tab-item" data-view="view-roundtable">🛋️ 书灵圆桌</div>
+        <div class="tab-item" data-view="view-infographics">🎨 概念图</div>
+        <div class="tab-item" data-view="view-library">📚 决策库</div>
+        <div class="tab-item" data-view="view-skills">🛠️ 技能馆</div>
+      </div>
+      
+      <!-- Views containers -->
+      <div class="tab-content">
+        <!-- View 1: Raw / Rendered Markdown Report -->
+        <div class="panel-view active" id="view-report">
+          <div class="view-grid">
+            <div style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; padding-right:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:13px; color:var(--text-muted);">决策分析报告：</span>
+                <div style="display:flex; gap:10px;">
+                  <button class="btn purple" id="distillSkillBtn" style="font-size:12px; padding:6px 14px;" disabled>🛠️ 蒸馏为 AI 技能</button>
+                  <button class="btn primary" id="saveReportToLibraryBtn" style="font-size:12px; padding:6px 14px;" disabled>💾 保存到决策库</button>
+                </div>
+              </div>
+              <div id="report-rendered-box" style="background:rgba(0,0,0,0.25); border:1px solid var(--glass-border); border-radius:12px; padding:32px; font-size:15px; line-height:1.8;">
+                <div style="color:var(--text-muted); text-align:center; padding:100px 0;">
+                  ⚡ 发起左侧拆解生成或导入报告后，将在此渲染高可读性战略简报...
+                </div>
+              </div>
+            </div>
+            <div id="report-citation-sidebar" style="background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:12px; padding:20px; overflow-y:auto;">
+              <h3 font-family="var(--font-display)" style="font-size:14px; margin-bottom:12px;">📋 引用材料追溯源</h3>
+              <div id="report-citation-list" style="display:flex; flex-direction:column; gap:12px; font-size:12.5px;">
+                <span style="color:var(--text-muted);">暂无引用的源材料段落。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+
+        <!-- View 3: 3D Flashcards -->
+        <div class="panel-view" id="view-flashcards">
+          <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--text-muted);">自动将拆书报告中提取的核心“商业模型”与“认知假设”封装成双面Anki闪卡：</span>
+          </div>
+          <div class="flashcards-grid" id="flashcards-container">
+            <!-- Flashcards populated here -->
+          </div>
+        </div>
+        
+        <!-- View 4: Double Debate -->
+        <div class="panel-view" id="view-debate">
+          <div class="debate-setup">
+            <div class="form-group">
+              <label>辩论正方</label>
+              <select class="form-control" id="debate-author-1">
+                <option value="彼得·蒂尔 (Peter Thiel)">彼得·蒂尔 (《从0到1》垄断派)</option>
+                <option value="雷军">雷军 (《小米创业思考》效率参与感派)</option>
+                <option value="克莱顿·克里斯坦森">克莱顿·克里斯坦森 (《创新者的窘境》颠覆式创新)</option>
+                <option value="张小龙">张小龙 (《微信背后的产品哲学》极致克制体验派)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>辩论反方</label>
+              <select class="form-control" id="debate-author-2">
+                <option value="埃里克·莱斯 (Eric Ries)">埃里克·莱斯 (《精益创业》敏捷迭代派)</option>
+                <option value="雷军">雷军 (《小米创业思考》效率派)</option>
+                <option value="张小龙">张小龙 (《微信背后的产品哲学》极致克制体验派)</option>
+                <option value="王兴">王兴 (《美团点评思考》长期聚焦效率派)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>输入针对小鹿业务的辩论焦点或疑问</label>
+            <input type="text" class="form-control" id="debate-query" placeholder="如：针对我们的 Scratch 少儿课程，应该坚持打磨极致的独占性，还是优先发布 MVP 进行用户反馈？">
+          </div>
+          <button class="btn purple" id="startDebateBtn" style="margin-bottom:20px;">⚔️ 启动大师思想对决</button>
+          
+          <div class="debate-console">
+            <div class="debate-messages" id="debate-messages-box">
+              <div style="color:var(--text-muted); text-align:center; margin-top:120px;">
+                💡 选择双方辩友和业务焦点，开启跨时代思想对抗，碰撞出非共识战略。
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- View 5: Strategy Simulator Sandbox -->
+        <div class="panel-view" id="view-sandbox">
+          <div class="form-group">
+            <label>输入你的战略调整计划假设（Simulator Scenario）</label>
+            <textarea class="form-control" id="sandbox-scenario" placeholder="如：小鹿AI编程决定在下季度缩减大班课，转型研发基于智能 Agent 的 299 元互动陪练编程软件，重点通过低门槛自传播引流。"></textarea>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+            <div class="form-group">
+              <label>预计投入预算 (元)</label>
+              <input type="number" class="form-control" id="sandbox-budget" value="100000">
+            </div>
+            <div class="form-group">
+              <label>实施团队规模 (人)</label>
+              <input type="number" class="form-control" id="sandbox-team" value="4">
+            </div>
+          </div>
+          <button class="btn primary" id="runSimulationBtn" style="margin-bottom:30px;">📊 启动蒙特卡洛战略沙盘推演</button>
+          
+          <div class="sandbox-metrics">
+            <div class="success-dial-card">
+              <span style="font-size:12px; color:var(--text-muted); font-weight:700;">战略推演胜率</span>
+              <svg class="dial-svg">
+                <defs>
+                  <linearGradient id="dial-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--cyan-neon)" />
+                    <stop offset="100%" stop-color="var(--blue-neon)" />
+                  </linearGradient>
+                </defs>
+                <circle class="dial-bg" cx="70" cy="70" r="60"></circle>
+                <circle class="dial-fill" id="sandbox-dial-fill" cx="70" cy="70" r="60"></circle>
+                <text class="dial-text" id="sandbox-dial-text" x="70" y="70">0%</text>
+              </svg>
+            </div>
+            <div class="sandbox-chart-container" id="sandbox-chart-box">
+              <span style="font-size:12px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:12px;">未来12个月推演发展轨迹（用户量与利润预测）</span>
+              <canvas id="sandboxCanvas" width="560" height="200" style="width:100%; height:180px;"></canvas>
+            </div>
+          </div>
+          
+          <div class="panel-card" id="sandbox-failure-points">
+            <div class="card-title" style="border-color:var(--purple-neon);">⚠️ 决策死穴与防御预警</div>
+            <div id="sandbox-failures-list" style="font-size:13px; line-height:1.8;">
+              <span style="color:var(--text-muted);">暂无推演结果。运行推演以评估决策风险瓶颈。</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- View 6: Roundtable Multi-Author Chat -->
+        <div class="panel-view" id="view-roundtable">
+          <div class="chat-lobby">
+            <div class="lobby-sidebar">
+              <h3 style="font-size:13px; font-family:var(--font-display);">👥 圆桌会议顾问团</h3>
+              <div style="display:flex; flex-direction:column; gap:12px; font-size:12.5px; margin-top:8px;">
+                <div style="font-weight:700; color:var(--cyan-neon); font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">🎯 经典商业大师</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" class="author-chk" value="彼得·蒂尔" checked> 彼得·蒂尔
+                  </label>
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" class="author-chk" value="雷军" checked> 雷军
+                  </label>
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" class="author-chk" value="克里斯坦森"> 克里斯坦森
+                  </label>
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" class="author-chk" value="张小龙"> 张小龙
+                  </label>
+                </div>
+                
+                <div style="font-weight:700; color:var(--cyan-neon); font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-top:8px; margin-bottom:4px;">📚 已蒸馏书灵 (SKILL)</div>
+                <div id="roundtable-dynamic-skills" style="display:flex; flex-direction:column; gap:8px;">
+                  <span style="color:var(--text-muted); font-size:11.5px;">暂无蒸馏技能</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="chat-area">
+              <div class="chat-messages" id="roundtable-chat-messages">
+                <div style="color:var(--text-muted); text-align:center; padding:100px 0;">
+                  🛋️ 勾选左侧作者组建顾问团，在下方提问开始交互式多作者会议...
+                </div>
+              </div>
+              <div class="chat-input-bar">
+                <input type="text" class="form-control" id="roundtable-chat-input" placeholder="输入问题发送给圆桌会议顾问团...">
+                <button class="btn primary" id="sendRoundtableMsgBtn">发送</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- View 7: Infographics ZIP generator -->
+        <div class="panel-view" id="view-infographics">
+          <div style="margin-bottom:20px; display:flex; justify-content:between; align-items:center;">
+            <span style="font-size:13px; color:var(--text-muted);">系统基于当前分析信息，为您生成三张具有独立视觉维度的超现代霓虹战略图：</span>
+            <button class="btn purple" id="zipDownloadInfographicsBtn" disabled>📦 打包全部下载 (ZIP)</button>
+          </div>
+          
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
+            <!-- Card 1 -->
+            <div class="panel-card" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:360px;">
+              <span class="card-tag">DIMENSION 1</span>
+              <h3 style="font-size:14px; margin-top:8px;">💡 垄断定位与核心逻辑</h3>
+              <div id="info-img-box-1" style="width:100%; height:180px; background:rgba(0,0,0,0.4); border-radius:6px; margin:16px 0; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <span style="color:var(--text-muted); font-size:12px;">未生成</span>
+              </div>
+              <button class="btn" style="width:100%; justify-content:center;" onclick="triggerSingleInfographic('strategy_card', 1)">生成战略逻辑图</button>
+            </div>
+            
+            <!-- Card 2 -->
+            <div class="panel-card" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:360px;">
+              <span class="card-tag">DIMENSION 2</span>
+              <h3 style="font-size:14px; margin-top:8px;">📅 12个月业务执行时间表</h3>
+              <div id="info-img-box-2" style="width:100%; height:180px; background:rgba(0,0,0,0.4); border-radius:6px; margin:16px 0; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <span style="color:var(--text-muted); font-size:12px;">未生成</span>
+              </div>
+              <button class="btn" style="width:100%; justify-content:center;" onclick="triggerSingleInfographic('execution_poster', 2)">生成执行时间表</button>
+            </div>
+            
+            <!-- Card 3 -->
+            <div class="panel-card" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:360px;">
+              <span class="card-tag">DIMENSION 3</span>
+              <h3 style="font-size:14px; margin-top:8px;">👥 团队协同与共学共识</h3>
+              <div id="info-img-box-3" style="width:100%; height:180px; background:rgba(0,0,0,0.4); border-radius:6px; margin:16px 0; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <span style="color:var(--text-muted); font-size:12px;">未生成</span>
+              </div>
+              <button class="btn" style="width:100%; justify-content:center;" onclick="triggerSingleInfographic('team_mindmap', 3)">生成团队协同图</button>
+            </div>
+          </div>
+          
+          <hr style="border:none; border-top:1px dashed rgba(255,255,255,0.1); margin:32px 0;">
+          
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <h3 style="font-family:var(--font-display); font-size:14px; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">🖼️ 历史决策图库</h3>
+            <div id="infographics-gallery" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:20px;">
+              <div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12px; text-align:center; padding:40px 0; border:1px dashed var(--glass-border); border-radius:10px;">
+                📭 暂无已保存的决策图。在上方生成或从决策舱载入书籍，生成概念图即可。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 8: Cloud Decision Library -->
+        <div class="panel-view" id="view-library">
+          <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13.5px; color:var(--text-muted);">云端与本地战略成果决策库：同步读取您的拆书报告、思维导图模型及闪卡，快速载入工作区。</span>
+          </div>
+          <div id="v2-library-list" style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; max-height:560px; padding-right:10px;">
+            <div style="color:var(--text-muted); text-align:center; padding:100px 0;">
+              暂无保存的决策报告。在「拆书报告」视图中生成后点击「保存到决策库」即可。
+            </div>
+          </div>
+        </div>
+
+        <!-- View 9: Distilled Skills Hub -->
+        <div class="panel-view" id="view-skills">
+          <div class="view-grid">
+            <div style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; padding-right:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:13.5px; color:var(--text-muted);" id="skill-viewer-title">🔍 技能包预览 (SKILL.md)：</span>
+                <div style="display:flex; gap:10px;">
+                  <button class="btn" id="copySkillCodeBtn" style="font-size:12px; padding:6px 12px;" disabled>📋 复制 Skill 代码</button>
+                  <button class="btn primary" id="downloadSkillBtn" style="font-size:12px; padding:6px 12px;" disabled>💾 下载 SKILL.md</button>
+                </div>
+              </div>
+              <div id="skill-rendered-box" style="background:rgba(0,0,0,0.35); border:1px solid var(--glass-border); border-radius:12px; padding:24px; font-family:monospace; font-size:13px; line-height:1.6; overflow-x:auto; white-space:pre-wrap; min-height:400px; color:#cbd5e1;">
+                <div style="color:var(--text-muted); text-align:center; padding:120px 0;">
+                  💡 在右侧已蒸馏书籍列表中选择一本书籍，在此加载并查看其对应的 AI 技能执行指令。
+                </div>
+              </div>
+            </div>
+            
+            <div style="background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:12px; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">
+              <h3 style="font-family:var(--font-display); font-size:14px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px;">🛠️ 已蒸馏书籍技能列表</h3>
+              <div id="skills-book-list" style="display:flex; flex-direction:column; gap:12px;">
+                <div style="color:var(--text-muted); font-size:12px; text-align:center; padding:30px 0;">暂无蒸馏成果</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     Immersive Fullscreen Reading Optimized Workspace
+     ========================================================================== -->
+<div id="fullscreen-workspace">
+  <div class="fs-header">
+    <div class="fs-title" id="fs-book-title-header">📖 全屏沉淀阅读 - 未载入书籍</div>
+    <div style="display:flex; gap:16px;">
+      <button class="btn" onclick="adjustFontSize(1)">A+</button>
+      <button class="btn" onclick="adjustFontSize(-1)">A-</button>
+      <button class="btn primary" id="fsCloseBtn">关闭全屏</button>
+    </div>
+  </div>
+  <div class="fs-body">
+    <div class="fs-reading-panel">
+      <article class="fs-article" id="fs-article-content">
+        <h2 style="text-align:center; padding:100px 0; color:var(--text-muted);">💡 暂无拆书报告内容，请先在工作区发起拆解生成...</h2>
+      </article>
+    </div>
+    <div class="fs-sidebar">
+      <h3 style="font-family:var(--font-display); font-size:14px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px;">📋 引用段落精确定位</h3>
+      <div id="fs-citation-list" style="display:flex; flex-direction:column; gap:16px; font-size:13px; line-height:1.7;">
+        <span style="color:var(--text-muted);">暂无引用的源材料段落。</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox modal for viewing large images -->
+<div id="image-lightbox-modal" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(6,9,19,0.95); backdrop-filter:blur(15px); z-index:99999; display:none; flex-direction:column; align-items:center; justify-content:center; gap:24px;">
+  <span style="position:absolute; top:20px; right:30px; font-size:36px; color:#fff; cursor:pointer; font-weight:bold; transition:color 0.2s;" onclick="closeImageLightbox()" onmouseover="this.style.color='var(--cyan-neon)'" onmouseout="this.style.color='#fff'">&times;</span>
+  <img id="lightbox-img" src="" style="max-width:90%; max-height:80%; border-radius:12px; box-shadow:0 20px 50px rgba(0,0,0,0.8); border:1px solid rgba(255,255,255,0.1); object-fit:contain;">
+  <div style="display:flex; gap:16px;">
+    <button class="btn primary" id="lightbox-download-btn" style="padding:10px 24px; font-size:14px; gap:8px;">💾 下载此维度图 (PNG)</button>
+    <button class="btn" onclick="closeImageLightbox()" style="padding:10px 24px; font-size:14px;">关闭</button>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     Visual Progress Overlay during Report Splitting
+     ========================================================================== -->
+<div id="progress-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(6,9,19,0.85); backdrop-filter:blur(15px); z-index:9999; display:none; flex-direction:column; align-items:center; justify-content:center; gap:24px;">
+  <div style="background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:40px; width:90%; max-width:540px; box-shadow:0 20px 50px rgba(0,0,0,0.5); text-align:center; display:flex; flex-direction:column; gap:20px;">
+    <div style="font-size:32px; animation:logoPulse 3s infinite ease-in-out;">🦉</div>
+    <h3 style="font-family:var(--font-display); font-size:18px; font-weight:700; color:var(--cyan-neon);" id="progress-status-title">正在启动 AI 战略拆解引擎...</h3>
+    <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); position:relative;">
+      <div id="progress-bar-fill" style="width:0%; height:100%; background:linear-gradient(90deg, var(--cyan-neon) 0%, var(--blue-neon) 100%); border-radius:4px; transition:width 0.4s ease-out; box-shadow:0 0 10px var(--cyan-neon);"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted);">
+      <span id="progress-step-text">初始化任务队列...</span>
+      <span id="progress-percent-text" style="font-weight:700; color:#fff;">0%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     Client Side Logic & Controllers
+     ========================================================================== -->
+<script>
+  // App state
+  const state = {
+    activeTab: 'view-report',
+    reportMarkdown: '',
+    reportHtml: '',
+    chunks: [],
+    parsedJSON: null,
+    generatedImages: {}, // cardType -> base64
+    fontSize: 16.5,
+    roundtableHistory: [],
+    skillMarkdown: '',
+    currentRecordId: null
+  };
+
+  // DOM bindings
+  const els = {
+    reportRenderedBox: document.getElementById('report-rendered-box'),
+    reportCitationList: document.getElementById('report-citation-list'),
+    switchToV1Btn: document.getElementById('switchToV1Btn'),
+    openFullscreenBtn: document.getElementById('openFullscreenBtn'),
+    fullscreenWorkspace: document.getElementById('fullscreen-workspace'),
+    fsArticleContent: document.getElementById('fs-article-content'),
+    fsCitationList: document.getElementById('fs-citation-list'),
+    fsCloseBtn: document.getElementById('fsCloseBtn'),
+    fsBookTitleHeader: document.getElementById('fs-book-title-header'),
+    generateReportBtn: document.getElementById('generateReportBtn'),
+    inputTitle: document.getElementById('input-title'),
+    inputAuthor: document.getElementById('input-author'),
+    inputGoal: document.getElementById('input-goal'),
+    inputBackground: document.getElementById('input-background'),
+    inputMaterials: document.getElementById('input-materials'),
+    
+    // WeRead mode elements
+    modeTabGeneral: document.getElementById('mode-tab-general'),
+    modeTabWeread: document.getElementById('mode-tab-weread'),
+    cardGeneralInput: document.getElementById('card-general-input'),
+    cardWereadInput: document.getElementById('card-weread-input'),
+    chkWereadConn: document.getElementById('chkWereadConn'),
+    btnWereadShelf: document.getElementById('btnWereadShelf'),
+    wereadSearchKey: document.getElementById('wereadSearchKey'),
+    wereadResultsList: document.getElementById('wereadResultsList'),
+    generateReportBtnWeRead: document.getElementById('generateReportBtnWeRead'),
+
+    // Progress Overlay
+    progressOverlay: document.getElementById('progress-overlay'),
+    progressBarFill: document.getElementById('progress-bar-fill'),
+    progressStepText: document.getElementById('progress-step-text'),
+    progressPercentText: document.getElementById('progress-percent-text'),
+    progressStatusTitle: document.getElementById('progress-status-title'),
+
+    // Supabase elements
+    saveReportToLibraryBtn: document.getElementById('saveReportToLibraryBtn'),
+    v2LibraryList: document.getElementById('v2-library-list'),
+    supabaseStatusDot: document.getElementById('supabase-status-dot'),
+    supabaseStatusText: document.getElementById('supabase-status-text'),
+
+    // Advanced Tabs UIs
+    flashcardsContainer: document.getElementById('flashcards-container'),
+    startDebateBtn: document.getElementById('startDebateBtn'),
+    debateMessagesBox: document.getElementById('debate-messages-box'),
+    runSimulationBtn: document.getElementById('runSimulationBtn'),
+    sandboxDialFill: document.getElementById('sandbox-dial-fill'),
+    sandboxDialText: document.getElementById('sandbox-dial-text'),
+    sandboxFailuresList: document.getElementById('sandbox-failures-list'),
+    sendRoundtableMsgBtn: document.getElementById('sendRoundtableMsgBtn'),
+    roundtableChatInput: document.getElementById('roundtable-chat-input'),
+    roundtableChatMessages: document.getElementById('roundtable-chat-messages'),
+    zipDownloadInfographicsBtn: document.getElementById('zipDownloadInfographicsBtn'),
+    
+    // Skill Distillation UIs
+    distillSkillBtn: document.getElementById('distillSkillBtn'),
+    copySkillCodeBtn: document.getElementById('copySkillCodeBtn'),
+    downloadSkillBtn: document.getElementById('downloadSkillBtn'),
+    skillRenderedBox: document.getElementById('skill-rendered-box'),
+    skillsBookList: document.getElementById('skills-book-list'),
+    skillViewerTitle: document.getElementById('skill-viewer-title')
+  };
+
+  // 1. Navigation Controller
+  document.querySelectorAll('.tab-item').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetView = tab.getAttribute('data-view');
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel-view').forEach(v => v.classList.remove('active'));
+      
+      tab.classList.add('active');
+      const viewEl = document.getElementById(targetView);
+      if (viewEl) {
+        viewEl.classList.add('active');
+      }
+      state.activeTab = targetView;
+
+      // Special initializations on tab switch
+      if (targetView === 'view-library') {
+        renderLibraryV2();
+      }
+      if (targetView === 'view-skills') {
+        renderSkillsListV2();
+      }
+      if (targetView === 'view-roundtable') {
+        renderRoundtableAdvisorsV2();
+      }
+      if (targetView === 'view-infographics') {
+        renderGalleryV2();
+      }
+    });
+  });
+
+  // Mode Switching general vs weread
+  els.modeTabGeneral.addEventListener('click', () => {
+    els.modeTabGeneral.classList.add('active');
+    els.modeTabWeread.classList.remove('active');
+    els.cardGeneralInput.classList.remove('hidden');
+    els.cardWereadInput.classList.add('hidden');
+  });
+
+  els.modeTabWeread.addEventListener('click', () => {
+    els.modeTabWeread.classList.add('active');
+    els.modeTabGeneral.classList.remove('active');
+    els.cardWereadInput.classList.remove('hidden');
+    els.cardGeneralInput.classList.add('hidden');
+  });
+
+  // Fullscreen toggle actions
+  els.openFullscreenBtn.addEventListener('click', () => {
+    if (!state.reportMarkdown) {
+      showToast('请先拆解书籍，生成报告后方能开启全屏深度阅读。', 'warning');
+      return;
+    }
+    els.fsBookTitleHeader.textContent = `📖 全屏沉淀阅读 - 《${els.inputTitle.value || '未命名'}》`;
+    els.fsArticleContent.innerHTML = state.reportHtml;
+    renderFullscreenCitations();
+    els.fullscreenWorkspace.classList.add('active');
+  });
+
+  els.fsCloseBtn.addEventListener('click', () => {
+    els.fullscreenWorkspace.classList.remove('active');
+  });
+
+  function adjustFontSize(dir) {
+    state.fontSize += dir * 1.5;
+    if (state.fontSize < 12) state.fontSize = 12;
+    if (state.fontSize > 32) state.fontSize = 32;
+    els.fsArticleContent.style.fontSize = `${state.fontSize}px`;
+  }
+
+  // 2. Drag & Drop File Upload Handler
+  els.inputMaterials.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    els.inputMaterials.style.borderColor = 'var(--cyan-neon)';
+  });
+
+  els.inputMaterials.addEventListener('dragleave', () => {
+    els.inputMaterials.style.borderColor = 'var(--glass-border)';
+  });
+
+  els.inputMaterials.addEventListener('drop', (e) => {
+    e.preventDefault();
+    els.inputMaterials.style.borderColor = 'var(--glass-border)';
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith('.txt') || file.name.endsWith('.md'))) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        els.inputMaterials.value = event.target.result;
+        showToast('材料文件导入成功！');
+      };
+      reader.readAsText(file);
+    } else {
+      showToast('仅支持导入 .txt 或 .md 纯文本格式文件。', 'warning');
+    }
+  });
+
+  // 3. Report Generator Action (ChatGPT 5.5 + Dynamic Prompt Loader)
+  els.generateReportBtn.addEventListener('click', async () => {
+    const title = els.inputTitle.value.trim();
+    const author = els.inputAuthor.value.trim();
+    const goal = els.inputGoal.value.trim();
+    const background = els.inputBackground.value.trim();
+    const materials = els.inputMaterials.value.trim();
+    
+    if (!title || !goal || !materials) {
+      showToast('书名、阅读目标和导入材料为必填项。', 'warning');
+      return;
+    }
+    
+    setLoadingState(true);
+    
+    // Reset state for new book report to prevent state leakage
+    state.currentRecordId = null;
+    state.generatedImages = {};
+    state.skillMarkdown = '';
+    
+    // Reset infographic UI preview boxes
+    ['info-img-box-1', 'info-img-box-2', 'info-img-box-3'].forEach(id => {
+      const box = document.getElementById(id);
+      if (box) {
+        box.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+      }
+    });
+    
+    try {
+      const res = await fetch('/.netlify/functions/v2-generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, author, goal, background, materials })
+      });
+      
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(result.error || '后端拆书接口异常');
+      }
+      
+      state.reportMarkdown = result.report || '';
+      state.chunks = result.chunks || [];
+      
+      // Parse markdown to HTML
+      state.reportHtml = renderMarkdownToHtml(state.reportMarkdown);
+      els.reportRenderedBox.innerHTML = state.reportHtml;
+      
+      // Render normal citations sidebar
+      renderCitationsList(els.reportCitationList);
+      
+      // Try to extract structural JSON from gpt-5.5 response
+      extractStructuralJSON();
+      
+      showToast('拆书完毕！已生成 V2.0 认知决策报告。');
+      
+      // Switch active tab view to rendered view
+      document.querySelector('[data-view="view-report"]').click();
+      
+    } catch (e) {
+      showToast(`报告生成失败: ${e.message}`, 'error');
+    } finally {
+      setLoadingState(false);
+    }
+  });
+
+  let progressInterval = null;
+  function startProgress() {
+    els.progressOverlay.style.display = 'flex';
+    els.progressOverlay.classList.remove('hidden');
+    let percent = 0;
+    els.progressBarFill.style.width = '0%';
+    els.progressPercentText.textContent = '0%';
+    
+    const steps = [
+      { p: 5, t: '读取与解析书籍输入材料和背景...', title: '数据解析中...' },
+      { p: 12, t: '加载 AIRead 专属战略拆书系统指令...', title: '配置模型参数...' },
+      { p: 20, t: '评估业务目标对齐边界与行业基准...', title: '战略对齐中...' },
+      { p: 35, t: '调取 ChatGPT 5.5 首席拆书官引擎...', title: '发起大模型推理...' },
+      { p: 50, t: '推演 25 部分高阶决策操作系统...', title: '构建脑图和框架...' },
+      { p: 65, t: '提炼核心商业模型与 3D Anki 闪卡...', title: '提取决策卡牌...' },
+      { p: 80, t: '执行反方挑战仿真与防线策略建模...', title: '反方对抗评估...' },
+      { p: 92, t: '封装结构化 JSON 沉淀数据块...', title: '输出就绪中...' },
+      { p: 97, t: '正在渲染可视化战略简报与数据拓扑...', title: '渲染视图...' }
+    ];
+    
+    els.progressStepText.textContent = steps[0].t;
+    els.progressStatusTitle.textContent = steps[0].title;
+    
+    let ticks = 0;
+    progressInterval = setInterval(() => {
+      ticks++;
+      if (ticks < 10) {
+        percent += Math.random() * 1.5;
+      } else if (ticks < 35) {
+        percent += Math.random() * 2.5;
+      } else if (ticks < 70) {
+        percent += Math.random() * 1.0;
+      } else if (percent < 98) {
+        percent += Math.random() * 0.3;
+      }
+      
+      if (percent > 98) percent = 98;
+      
+      const roundedPercent = Math.floor(percent);
+      els.progressBarFill.style.width = `${roundedPercent}%`;
+      els.progressPercentText.textContent = `${roundedPercent}%`;
+      
+      const activeStep = steps.slice().reverse().find(s => percent >= s.p);
+      if (activeStep) {
+        els.progressStepText.textContent = activeStep.t;
+        els.progressStatusTitle.textContent = activeStep.title;
+      }
+    }, 450);
+  }
+  
+  function finishProgress() {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+    els.progressBarFill.style.width = '100%';
+    els.progressPercentText.textContent = '100%';
+    els.progressStepText.textContent = '战略拆书任务已全部完成！';
+    els.progressStatusTitle.textContent = '生成完毕';
+    
+    setTimeout(() => {
+      els.progressOverlay.style.display = 'none';
+      els.progressOverlay.classList.add('hidden');
+    }, 850);
+  }
+
+  function setLoadingState(loading) {
+    if (loading) {
+      els.generateReportBtn.disabled = true;
+      els.generateReportBtn.innerHTML = `<span>⏳ 正在拆解中...</span>`;
+      startProgress();
+    } else {
+      els.generateReportBtn.disabled = false;
+      els.generateReportBtn.innerHTML = `🚀 发起深度拆解`;
+      finishProgress();
+    }
+  }
+
+  // Toast Helper
+  function showToast(msg, type = 'info') {
+    const toast = document.createElement('div');
+    toast.style.position = 'fixed';
+    toast.style.bottom = '30px';
+    toast.style.right = '30px';
+    toast.style.maxWidth = '400px';
+    toast.style.whiteSpace = 'pre-wrap';
+    toast.style.lineHeight = '1.5';
+    
+    if (type === 'error') {
+      toast.style.background = 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)';
+      toast.style.color = '#fff';
+      toast.style.boxShadow = '0 8px 30px rgba(239, 68, 68, 0.4)';
+    } else if (type === 'warning') {
+      toast.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+      toast.style.color = '#fff';
+      toast.style.boxShadow = '0 8px 30px rgba(245, 158, 11, 0.4)';
+    } else {
+      toast.style.background = 'linear-gradient(135deg, var(--cyan-neon) 0%, var(--blue-neon) 100%)';
+      toast.style.color = 'var(--text-dark)';
+      toast.style.boxShadow = '0 8px 30px rgba(0, 242, 254, 0.4)';
+    }
+    
+    toast.style.padding = '14px 24px';
+    toast.style.borderRadius = '10px';
+    toast.style.fontSize = '13.5px';
+    toast.style.fontWeight = '700';
+    toast.style.zIndex = '9999';
+    toast.style.transition = 'opacity 0.3s ease-out';
+    toast.textContent = msg;
+    
+    document.body.appendChild(toast);
+    
+    const duration = (type === 'error' || type === 'warning' || msg.length > 25) ? 5000 : 3000;
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+
+  function parseInlineMarkdown(text) {
+    if (!text) return '';
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: var(--cyan-neon);">$1</code>');
+  }
+
+  // 4. Markdown and Citation Interactive Parser
+  function renderMarkdownToHtml(md) {
+    if (!md) return '';
+    
+    // Escape HTML first to prevent any script injections but preserve markdown structure safely
+    md = escapeHtml(md);
+    
+    // Replace citations [Ref-X] with interactive badge elements
+    md = md.replace(/\[Ref-(\d+)\]/g, (match, id) => {
+      return `<span class="ref-badge" onclick="highlightCitation(${id})">Ref-${id}</span>`;
+    });
+
+    const blocks = md.split(/\n\n+/);
+    let inList = false;
+    let listHtml = '';
+    const htmlBlocks = [];
+
+    function flushList() {
+      if (inList) {
+        htmlBlocks.push(`<ul style="margin-left: 24px; margin-bottom: 18px; list-style-type: square; color: #cbd5e1;">${listHtml}</ul>`);
+        listHtml = '';
+        inList = false;
+      }
+    }
+
+    for (let block of blocks) {
+      block = block.trim();
+      if (!block) continue;
+
+      if (block.startsWith('```')) {
+        flushList();
+        // Remove code block ticks
+        const codeContent = block.replace(/^```[a-zA-Z0-9]*\n/, '').replace(/```$/, '').trim();
+        htmlBlocks.push(`<pre style="background: rgba(0,0,0,0.45); padding: 16px; border-radius: 8px; border: 1px solid var(--glass-border); overflow-x: auto; font-family: monospace; font-size: 12.5px; color: #f8fafc; margin-bottom: 18px; line-height: 1.5;"><code>${codeContent}</code></pre>`);
+      } else if (block.startsWith('# ')) {
+        flushList();
+        htmlBlocks.push(`<h1 style="font-family: var(--font-display); font-size: 26px; font-weight: 800; color: #ffffff; margin-top: 32px; margin-bottom: 14px;">${parseInlineMarkdown(block.slice(2))}</h1>`);
+      } else if (block.startsWith('## ')) {
+        flushList();
+        htmlBlocks.push(`<h2 style="font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--cyan-neon); margin-top: 28px; margin-bottom: 12px; border-bottom: 1px solid var(--glass-border); padding-bottom: 6px;">${parseInlineMarkdown(block.slice(3))}</h2>`);
+      } else if (block.startsWith('### ')) {
+        flushList();
+        htmlBlocks.push(`<h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--blue-neon); margin-top: 20px; margin-bottom: 8px;">${parseInlineMarkdown(block.slice(4))}</h3>`);
+      } else if (block.startsWith('> ')) {
+        flushList();
+        htmlBlocks.push(`<blockquote style="border-left: 4px solid var(--purple-neon); background: rgba(177, 82, 255, 0.05); padding: 12px 18px; border-radius: 4px; font-style: italic; color: #cbd5e1; margin-bottom: 18px;">${parseInlineMarkdown(block.slice(2)).replace(/\n/g, '<br>')}</blockquote>`);
+      } else if (block.startsWith('- ') || block.startsWith('* ')) {
+        inList = true;
+        const items = block.split(/\n[-*]\s+/);
+        for (const it of items) {
+          const itemText = it.replace(/^[-*]\s+/, '');
+          listHtml += `<li style="margin-bottom: 6px;">${parseInlineMarkdown(itemText)}</li>`;
+        }
+      } else {
+        flushList();
+        htmlBlocks.push(`<p style="margin-bottom: 18px; color: #cbd5e1; text-align: justify;">${parseInlineMarkdown(block)}</p>`);
+      }
+    }
+    flushList();
+    return htmlBlocks.join('\n');
+  }
+
+  // Render citation side list
+  function renderCitationsList(container) {
+    container.innerHTML = '';
+    if (state.chunks.length === 0) {
+      container.innerHTML = '<span style="color:var(--text-muted);">暂无引用的源材料段落。</span>';
+      return;
+    }
+    
+    state.chunks.forEach(chunk => {
+      const card = document.createElement('div');
+      card.className = 'source-excerpt-card';
+      card.id = `excerpt-card-${chunk.id}`;
+      card.innerHTML = `
+        <div style="font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--cyan-neon); margin-bottom: 6px; display:flex; justify-content:space-between;">
+          <span>Ref-${chunk.id}</span>
+          <span style="color:var(--text-muted); font-weight:normal;">${chunk.title}</span>
+        </div>
+        <div style="color: #cbd5e1;">${escapeHtml(chunk.content)}</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function renderFullscreenCitations() {
+    renderCitationsList(els.fsCitationList);
+  }
+
+  // Highlight reference scrolls and flashes
+  window.highlightCitation = function(id) {
+    const isFullscreen = els.fullscreenWorkspace.classList.contains('active');
+    const container = isFullscreen ? els.fsCitationList : els.reportCitationList;
+    const card = container.querySelector(`#excerpt-card-${id}`);
+    
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.querySelectorAll('.source-excerpt-card').forEach(c => c.classList.remove('highlighted'));
+      card.classList.add('highlighted');
+      setTimeout(() => card.classList.remove('highlighted'), 2500);
+    }
+  };
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // 5. JSON Extractor
+  function extractStructuralJSON() {
+    let jsonContent = '';
+    // Look for JSON structures in output
+    const regex = /\{[\s\S]*\}/;
+    const match = state.reportMarkdown.match(regex);
+    let parsed = null;
+    if (match) {
+      try {
+        parse�结果”支付高溢价。',
+          why_it_matters: '这是我们走高客单价路线的底盘假设。'
+        });
+        json.assumptions.push({
+          assumption: '假设4人的研发团队能在1个月内闭环发布满足基本闭环的AI伴练产品。',
+          why_it_matters: '限制了我们的研发复杂度与交付边界。'
+        });
+      }
+    } catch (err) {
+      console.warn('Fallback markdown parsing error:', err);
+    }
+
+    return json;
+  }
+
+  // 6. SVG D3.js Logic Map Generator
+  function renderD3Mindmap() {
+    const container = document.getElementById('mindmap-svg-container');
+    container.innerHTML = ''; // reset
+    
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 400;
+
+    const svg = d3.select('#mindmap-svg-container')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    // Prepare data nodes from parsedJSON
+    const nodes = [];
+    const links = [];
+
+    if (!state.parsedJSON) return;
+
+    // Center root book node
+    nodes.push({ id: 'root', label: state.parsedJSON.book_card?.title || '书籍主体', type: 'root', details: state.parsedJSON.book_card?.one_sentence || '' });
+
+    // Add models
+    if (state.parsedJSON.models) {
+      state.parsedJSON.models.forEach((m, i) => {
+        const nodeId = `model-${i}`;
+        nodes.push({ id: nodeId, label: m.name, type: 'model', details: m.explanation || '' });
+        links.push({ source: 'root', target: nodeId });
+      });
+    }
+
+    // Add core ideas
+    if (state.parsedJSON.core_ideas) {
+      state.parsedJSON.core_ideas.forEach((idea, i) => {
+        const nodeId = `idea-${i}`;
+        nodes.push({ id: nodeId, label: idea.idea.slice(0, 15) + '...', type: 'idea', details: idea.idea || '' });
+        links.push({ source: 'root', target: nodeId });
+      });
+    }
+
+    // Color definitions
+    const colors = {
+      root: 'var(--cyan-neon)',
+      model: 'var(--blue-neon)',
+      idea: 'var(--purple-neon)'
+    };
+
+    // Force simulation
+    const simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(d => d.id).distance(120))
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(width / 2, height / 2));
+
+    // Links lines
+    const link = svg.append('g')
+      .selectAll('line')
+      .data(links)
+      .enter().append('line')
+      .attr('class', 'link')
+      .attr('stroke', '#4facfe');
+
+    // Nodes elements
+    const node = svg.append('g')
+      .selectAll('.node')
+      .data(nodes)
+      .enter().append('g')
+      .attr('class', 'node')
+      .call(d3.drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended))
+      .on('click', (event, d) => {
+        document.getElementById('mindmap-detail-content').innerHTML = `
+          <div style="font-family: var(--font-display); font-size:14px; font-weight:700; color:var(--cyan-neon); margin-bottom:8px;">${d.label}</div>
+          <div style="line-height:1.7;">${d.details}</div>
+        `;
+      });
+
+    node.append('circle')
+      .attr('r', d => d.type === 'root' ? 16 : 10)
+      .attr('fill', d => colors[d.type])
+      .attr('stroke', '#ffffff')
+      .attr('filter', 'drop-shadow(0px 0px 8px rgba(0, 242, 254, 0.5))');
+
+    node.append('text')
+      .attr('class', 'node-text')
+      .attr('dx', 14)
+      .attr('dy', '.35em')
+      .text(d => d.label);
+
+    simulation.on('tick', () => {
+      link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+
+      node
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+  }
+
+  // 7. 3D Flashcards Populator
+  function populateFlashcards() {
+    els.flashcardsContainer.innerHTML = '';
+    if (!state.parsedJSON) return;
+
+    // Build model cards
+    if (state.parsedJSON.models) {
+      state.parsedJSON.models.forEach((m, i) => {
+        const card = createFlashcard(`模型 ${i+1}`, m.name, m.explanation, `小鹿业务场景：${m.use_case_for_me || '待定制应用'}`);
+        els.flashcardsContainer.appendChild(card);
+      });
+    }
+
+    // Build assumption cards
+    if (state.parsedJSON.assumptions) {
+      state.parsedJSON.assumptions.forEach((a, i) => {
+        const card = createFlashcard(`认知假设 ${i+1}`, a.assumption.slice(0, 30) + '...', a.assumption, `关键价值：${a.why_it_matters || '重要逻辑支撑'}`);
+        els.flashcardsContainer.appendChild(card);
+      });
+    }
+  }
+
+  function createFlashcard(tag, title, text, meta) {
+    const cardWrap = document.createElement('div');
+    cardWrap.className = 'flashcard-wrapper';
+    
+    const card = document.createElement('div');
+    card.className = 'flashcard';
+    
+    const front = document.createElement('div');
+    front.className = 'card-face front';
+    front.innerHTML = `
+      <span class="card-tag">${tag}</span>
+      <h2 class="card-front-title">${title}</h2>
+      <div class="card-front-footer">
+        <span>🔍 点击查看业务对齐方案</span>
+        <span>⚡ 3D FLASHCARD</span>
+      </div>
+    `;
+    
+    const back = document.createElement('div');
+    back.className = 'card-face back';
+    back.innerHTML = `
+      <h3 class="card-back-title">${title}</h3>
+      <p class="card-back-text">${text}</p>
+      <div class="card-back-meta">${meta}</div>
+    `;
+    
+    card.appendChild(front);
+    card.appendChild(back);
+    cardWrap.appendChild(card);
+    
+    cardWrap.addEventListener('click', () => {
+      card.classList.toggle('flipped');
+    });
+    
+    return cardWrap;
+  }
+
+  // 8. AI Double Debate Controller
+  els.startDebateBtn.addEventListener('click', async () => {
+    const author1 = document.getElementById('debate-author-1').value;
+    const author2 = document.getElementById('debate-author-2').value;
+    const query = document.getElementById('debate-query').value.trim();
+    
+    if (!query) {
+      showToast('请输入要探讨辩论的核心痛点问题。', 'warning');
+      return;
+    }
+    
+    // Progressive Loading Steps
+    const steps = [
+      `🌐 [步骤 1/4] 正在加载双方思想模型: [ ${author1} ] 与 [ ${author2} ]...`,
+      `⚙️ [步骤 2/4] 正在根据业务焦点 “${query}” 构建辩论议程与场景特征...`,
+      `🧠 [步骤 3/4] 正在激活双子模型对抗神经网络，模拟正反方思想交锋...`,
+      `📝 [步骤 4/4] 对抗性辩论完成，正在由首席战略官整理双方共识与落地动作...`
+    ];
+    
+    els.debateMessagesBox.innerHTML = `
+      <div style="color:var(--text-muted); font-size:13.5px; padding:40px; display:flex; flex-direction:column; gap:16px; align-items:center; justify-content:center; text-align:center; height:100%;">
+        <div style="font-size:28px; animation:logoPulse 2s infinite ease-in-out;">⚔️</div>
+        <div id="debate-step-log" style="font-family: monospace; max-width: 440px; line-height: 1.6;">${steps[0]}</div>
+      </div>
+    `;
+    
+    let currentStep = 1;
+    const stepInterval = setInterval(() => {
+      const logEl = document.getElementById('debate-step-log');
+      if (logEl && currentStep < steps.length) {
+        logEl.textContent = steps[currentStep];
+        currentStep++;
+      }
+    }, 1500);
+    
+    try {
+      const res = await fetch('/.netlify/functions/v2-double-debate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ author1, author2, query, bookTitle: els.inputTitle.value })
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(result.error || '辩论算法生成失败');
+      }
+      
+      clearInterval(stepInterval);
+      renderDebateScript(result.debate);
+    } catch (e) {
+      clearInterval(stepInterval);
+      els.debateMessagesBox.innerHTML = `<div style="color:red; text-align:center; padding-top:120px;">🔴 辩论失败: ${e.message}</div>`;
+    }
+  });
+
+  function renderDebateScript(md) {
+    els.debateMessagesBox.innerHTML = '';
+    // Parse simulated turns [Name] or **Name**:
+    const turns = md.split(/\*\*轮次 \d+：/g);
+    
+    let speakerCount = 0;
+    
+    turns.forEach(turn => {
+      const trimmed = turn.trim();
+      if (!trimmed) return;
+      
+      // Attempt to identify speaker name
+      const speakerRegex = /^\[(.*?)\]\s*([\s\S]*)$/;
+      const match = trimmed.match(speakerRegex);
+      
+      let speaker = '首席战略官';
+      let speech = trimmed;
+      if (match) {
+        speaker = match[1];
+        speech = match[2];
+      }
+      
+      const isRight = speakerCount % 2 === 1;
+      speakerCount++;
+      
+      const bubble = document.createElement('div');
+      bubble.className = `debate-bubble ${isRight ? 'right' : 'left'}`;
+      bubble.innerHTML = `
+        <div class="debate-avatar">${isRight ? '💡' : '🎓'}</div>
+        <div class="debate-content">
+          <div class="debate-author-name">${speaker}</div>
+          <div>${speech.replace(/\n/g, '<br>')}</div>
+        </div>
+      `;
+      els.debateMessagesBox.appendChild(bubble);
+    });
+    
+    els.debateMessagesBox.scrollTop = els.debateMessagesBox.scrollHeight;
+  }
+
+  // 9. Sandbox Simulator Monte Carlo Projections Chart
+  els.runSimulationBtn.addEventListener('click', async () => {
+    const scenario = document.getElementById('sandbox-scenario').value.trim();
+    const title = els.inputTitle.value.trim() || '从 0 到 1';
+    const budget = document.getElementById('sandbox-budget').value;
+    const teamSize = document.getElementById('sandbox-team').value;
+    const goal = els.inputGoal.value;
+
+    if (!scenario) {
+      showToast('请输入待推演的战略场景计划。', 'warning');
+      return;
+    }
+
+    els.runSimulationBtn.disabled = true;
+    els.runSimulationBtn.textContent = '⏳ 正在进行蒙特卡洛战略数据建模...';
+
+    try {
+      const res = await fetch('/.netlify/functions/v2-strategy-simulator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, scenario, goal, budget, teamSize })
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(result.error || '战略推演失败');
+      }
+
+      // Update success dial gauge
+      const prob = result.successProbability || 50;
+      updateDial(prob);
+
+      // Render chart
+      renderSimulationChart(result.timelineProjections || []);
+
+      // Render bottlenecks
+      renderSimulationFailurePoints(result.criticalFailurePoints || []);
+
+    } catch (e) {
+      showToast(`沙盘推演失败: ${e.message}`, 'error');
+    } finally {
+      els.runSimulationBtn.disabled = false;
+      els.runSimulationBtn.textContent = '📊 启动蒙特卡洛战略沙盘推演';
+    }
+  });
+
+  function updateDial(prob) {
+    els.sandboxDialText.textContent = `${prob}%`;
+    const offset = 377 - (377 * prob / 100);
+    els.sandboxDialFill.style.strokeDashoffset = offset;
+  }
+
+  function renderSimulationChart(timeline) {
+    const canvas = document.getElementById('sandboxCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (timeline.length === 0) return;
+    
+    // Draw chart axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 10);
+    ctx.lineTo(40, 160);
+    ctx.lineTo(540, 160);
+    ctx.stroke();
+
+    // Map month data points
+    const maxVal = Math.max(...timeline.map(t => t.revenue || 1000));
+    const stepX = 500 / (timeline.length - 1);
+    
+    // Draw Revenue Projections Line
+    ctx.strokeStyle = 'var(--cyan-neon)';
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(0, 242, 254, 0.5)';
+    ctx.beginPath();
+    
+    timeline.forEach((pt, i) => {
+      const x = 40 + i * stepX;
+      const y = 160 - (pt.revenue / maxVal * 130);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    
+    // Reset shadow
+    ctx.shadowBlur = 0;
+
+    // Draw Users Line
+    const maxUsers = Math.max(...timeline.map(t => t.users || 100));
+    ctx.strokeStyle = 'var(--purple-neon)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    timeline.forEach((pt, i) => {
+      const x = 40 + i * stepX;
+      const y = 160 - (pt.users / maxUsers * 130);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = 'var(--text-muted)';
+    ctx.font = '10px sans-serif';
+    timeline.forEach((pt, i) => {
+      if (i % 2 === 0) {
+        ctx.fillText(pt.month, 40 + i * stepX - 8, 175);
+      }
+    });
+  }
+
+  function renderSimulationFailurePoints(failures) {
+    els.sandboxFailuresList.innerHTML = '';
+    if (failures.length === 0) {
+      els.sandboxFailuresList.innerHTML = '<span style="color:var(--text-muted);">暂无推演瓶颈警告。</span>';
+      return;
+    }
+
+    failures.forEach(f => {
+      const div = document.createElement('div');
+      div.style.background = 'rgba(255, 255, 255, 0.04)';
+      div.style.border = '1px solid var(--glass-border)';
+      div.style.borderRadius = '8px';
+      div.style.padding = '12px';
+      div.style.marginBottom = '10px';
+      div.innerHTML = `
+        <div style="font-weight:700; color:#ff4f4f; display:flex; justify-content:space-between;">
+          <span>🚨 风险点: ${f.point}</span>
+          <span style="font-size:11px; background:#ff4f4f; color:#ffffff; padding:1px 6px; border-radius:4px;">严重性: ${f.severity}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">⚡ 触发事件阀值: ${f.triggerCondition}</div>
+      `;
+      els.sandboxFailuresList.appendChild(div);
+    });
+  }
+
+  // 10. Roundtable Author Chat Controller
+  els.sendRoundtableMsgBtn.addEventListener('click', async () => {
+    const inputMsg = els.roundtableChatInput.value.trim();
+    if (!inputMsg) return;
+
+    // Get checked authors
+    const selectedAuthors = Array.from(document.querySelectorAll('.author-chk:checked')).map(c => c.value);
+    if (selectedAuthors.length === 0) {
+      showToast('请先在左侧选择至少一名圆桌作者。', 'warning');
+      return;
+    }
+
+    // Extract selected skill contexts for virtual book spirits
+    const selectedSkillContexts = {};
+    document.querySelectorAll('.author-chk:checked').forEach(c => {
+      const skillId = c.getAttribute('data-skill-id');
+      if (skillId) {
+        const record = loadedLibraryRecordsV2.find(r => r.id === skillId);
+        if (record) {
+          selectedSkillContexts[`《${record.title}》书灵`] = record.skill_markdown || record.skillMarkdown || '';
+        }
+      }
+    });
+
+    // Append user message to log
+    appendChatMessage('user', '用户', inputMsg);
+    els.roundtableChatInput.value = '';
+
+    state.roundtableHistory.push({ role: 'user', content: inputMsg });
+
+    // Append roundtable progressive loading bubble
+    const steps = [
+      `👥 [步骤 1/3] 正在载入虚拟会议舱，对接专家顾问团: ${selectedAuthors.map(a => a.split(' ')[0]).join(', ')}...`,
+      `💡 [步骤 2/3] 顾问团就提问展开多轮跨界思想碰撞与方案建模...`,
+      `📝 [步骤 3/3] 正在梳理多方争论共识，提炼落地战术指南...`
+    ];
+
+    const tempBubble = document.createElement('div');
+    tempBubble.className = 'debate-bubble left';
+    tempBubble.id = 'roundtable-loading-bubble';
+    tempBubble.innerHTML = `
+      <div class="debate-avatar" style="background:rgba(255,255,255,0.15)">⏳</div>
+      <div class="debate-content">
+        <div class="debate-author-name">书灵顾问团 (研讨中)</div>
+        <div id="roundtable-step-log" style="font-family:monospace; font-size:12.5px; line-height:1.6; color:var(--text-muted);">${steps[0]}</div>
+      </div>
+    `;
+    
+    // Clear initial lobby notice if any
+    if (els.roundtableChatMessages.querySelector('div[style*="text-align:center"]')) {
+      els.roundtableChatMessages.innerHTML = '';
+    }
+    
+    els.roundtableChatMessages.appendChild(tempBubble);
+    els.roundtableChatMessages.scrollTop = els.roundtableChatMessages.scrollHeight;
+
+    let currentStep = 1;
+    const stepInterval = setInterval(() => {
+      const logEl = document.getElementById('roundtable-step-log');
+      if (logEl && currentStep < steps.length) {
+        logEl.textContent = steps[currentStep];
+        currentStep++;
+      }
+    }, 1500);
+
+    try {
+      const res = await fetch('/.netlify/functions/v2-roundtable-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: els.inputTitle.value,
+          authors: selectedAuthors.join(','),
+          messages: state.roundtableHistory,
+          skillsContext: selectedSkillContexts
+        })
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || '圆桌会议调用失败');
+
+      clearInterval(stepInterval);
+      const temp = document.getElementById('roundtable-loading-bubble');
+      if (temp) temp.remove();
+
+      appendChatMessage('assistant', '顾问团', result.message);
+      state.roundtableHistory.push({ role: 'assistant', content: result.message });
+    } catch (e) {
+      clearInterval(stepInterval);
+      const temp = document.getElementById('roundtable-loading-bubble');
+      if (temp) temp.remove();
+      appendChatMessage('system', '系统错误', e.message);
+    }
+  });
+
+  function appendChatMessage(role, sender, text) {
+    // Clear initial lobby notice
+    if (els.roundtableChatMessages.querySelector('div[style*="text-align:center"]')) {
+      els.roundtableChatMessages.innerHTML = '';
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = `debate-bubble ${role === 'user' ? 'right' : 'left'}`;
+    bubble.innerHTML = `
+      <div class="debate-avatar" style="${role === 'user' ? 'background:linear-gradient(135deg, var(--green-neon), var(--blue-neon));' : ''}">${role === 'user' ? '👤' : '🛋️'}</div>
+      <div class="debate-content">
+        <div class="debate-author-name">${sender}</div>
+        <div>${text.replace(/\n/g, '<br>')}</div>
+      </div>
+    `;
+    els.roundtableChatMessages.appendChild(bubble);
+    els.roundtableChatMessages.scrollTop = els.roundtableChatMessages.scrollHeight;
+  }
+
+  // 11. Multi-Infographics generator and JSZip packing
+  function saveLocalV2AndGetId(record) {
+    const records = getLibraryLocalV2();
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    state.currentRecordId = id;
+    const newRecord = {
+      id,
+      ...record,
+      categoryLabel: getCategoryLabel(record.category),
+      depthLabel: getDepthLabel(record.depth),
+      createdAt: Date.now()
+    };
+    records.unshift(newRecord);
+    localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+    loadedLibraryRecordsV2 = records; // Sync in-memory array!
+    showToast('图生成成功，已自动保存该书籍的报告与逻辑图至本地决策库！');
+  }
+
+  window.triggerSingleInfographic = async function(cardType, boxId) {
+    const title = els.inputTitle.value.trim();
+    const author = els.inputAuthor.value.trim();
+    
+    if (!title) {
+      showToast('请先输入书籍标题。', 'warning');
+      return;
+    }
+
+    const imgContainer = document.getElementById(`info-img-box-${boxId}`);
+    imgContainer.innerHTML = `<span style="color:var(--text-muted); font-size:12px;">⏳ 正在生成...</span>`;
+
+    try {
+      const res = await fetch('/.netlify/functions/v2-generate-infographic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          author,
+          categoryLabel: '战略商业书',
+          goal: els.inputGoal.value,
+          cardType
+        })
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || '图生成失败');
+
+      const imgUrl = result.imageUrl;
+      state.generatedImages[cardType] = imgUrl;
+
+      imgContainer.innerHTML = `<img src="${imgUrl}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${imgUrl}', '${cardType}')" title="点击查看大图">`;
+      
+      // Auto-save the new image to library record (create skeleton if not saved yet, update otherwise)
+      if (!state.currentRecordId) {
+        const record = {
+          title: els.inputTitle.value.trim() || '未定义书籍',
+          author: els.inputAuthor.value.trim() || '未知作者',
+          category: 'strategy',
+          depth: 'deep',
+          goal: els.inputGoal.value.trim(),
+          background: els.inputBackground.value.trim(),
+          materials: els.inputMaterials.value.trim(),
+          report: state.reportMarkdown || '',
+          chunks: state.chunks || [],
+          parsed_json: state.parsedJSON || null,
+          skill_markdown: state.skillMarkdown || '',
+          images_json: state.generatedImages || {}
+        };
+        
+        if (supabaseClient) {
+          try {
+            const result = await supabaseClient
+              .from('xiaolu_reports')
+              .insert([record])
+              .select();
+            if (result.data && result.data[0]) {
+              state.currentRecordId = result.data[0].id;
+              const newRec = {
+                id: result.data[0].id,
+                title: result.data[0].title,
+                author: result.data[0].author || '',
+                category: result.data[0].category || 'strategy',
+                categoryLabel: getCategoryLabel(result.data[0].category),
+                depth: result.data[0].depth || 'deep',
+                depthLabel: getDepthLabel(result.data[0].depth),
+                goal: result.data[0].goal || '',
+                background: result.data[0].background || '',
+                materials: result.data[0].materials || '',
+                report: result.data[0].report || '',
+                chunks: result.data[0].chunks || [],
+                parsed_json: result.data[0].parsed_json || null,
+                skill_markdown: result.data[0].skill_markdown || result.data[0].skillMarkdown || '',
+                images_json: result.data[0].images_json || result.data[0].imagesJson || null,
+                createdAt: new Date(result.data[0].created_at).getTime()
+              };
+              loadedLibraryRecordsV2.unshift(newRec);
+              showToast('图生成成功，已自动同步保存该书籍的报告与逻辑图至云端决策库！');
+            }
+            if (result.error) throw result.error;
+          } catch (err) {
+            console.error('Supabase auto-save failed, saving locally:', err);
+            saveLocalV2AndGetId(record);
+          }
+        } else {
+          saveLocalV2AndGetId(record);
+        }
+      } else {
+        const record = loadedLibraryRecordsV2.find(r => r.id === state.currentRecordId);
+        if (record) {
+          if (!record.images_json) record.images_json = {};
+          record.images_json[cardType] = imgUrl;
+          record.imagesJson = record.images_json;
+          
+          if (supabaseClient) {
+            const isUuid = state.currentRecordId.length > 20;
+            if (isUuid) {
+              await supabaseClient
+                .from('xiaolu_reports')
+                .update({ images_json: record.images_json })
+                .eq('id', state.currentRecordId);
+            } else {
+              updateLocalImagesV2(state.currentRecordId, record.images_json);
+            }
+          } else {
+            updateLocalImagesV2(state.currentRecordId, record.images_json);
+          }
+          showToast('已更新并自动同步逻辑图至决策库！');
+        }
+      }
+      
+      // Refresh gallery if visible
+      if (state.activeTab === 'view-infographics') {
+        renderGalleryV2();
+      }
+    } catch (e) {
+      imgContainer.innerHTML = `<span style="color:red; font-size:12px;">🔴 失败: ${e.message}</span>`;
+    }
+  };
+
+  els.zipDownloadInfographicsBtn.addEventListener('click', async () => {
+    const zip = new JSZip();
+    const title = els.inputTitle.value.trim() || '从0到1';
+
+    let keys = Object.keys(state.generatedImages);
+    if (keys.length === 0) {
+      showToast('尚未生成任何信息图。请先点击下方的按钮生成后再执行打包。', 'warning');
+      return;
+    }
+
+    showToast('正在打包多维度信息图，请稍候...');
+
+    keys.forEach(key => {
+      const dataUrl = state.generatedImages[key];
+      if (dataUrl && dataUrl.startsWith('data:image/png;base64,')) {
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+        zip.file(`小鹿AI拆书-V2-${key}-${title}.png`, base64Data, { base64: true });
+      }
+    });
+
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      const blobUrl = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `小鹿AI拆书-V2-多维度信息图打包-${title}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+      showToast('📦 压缩包打包下载成功！');
+    } catch (e) {
+      showToast(`打包压缩失败: ${e.message}`, 'error');
+    }
+  });
+
+  // 12. Connect WeRead actions (V1 methods reuse)
+  els.chkWereadConn.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/.netlify/functions/import-weread', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'health' })
+      });
+      const data = await res.json();
+      showToast(`微信读书网关状态: ${data.status === 'ready' ? '连接就绪' : '未就绪'} (${data.message})`, data.status === 'ready' ? 'info' : 'warning');
+    } catch (e) {
+      showToast(`连接失败: ${e.message}`, 'error');
+    }
+  });
+
+  els.btnWereadShelf.addEventListener('click', async () => {
+    els.wereadResultsList.innerHTML = '正在加载书架书目...';
+    try {
+      const res = await fetch('/.netlify/functions/import-weread', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'importShelf' })
+      });
+      const data = await res.json();
+      renderBooksList(data.books || []);
+    } catch (e) {
+      els.wereadResultsList.innerHTML = `<span style="color:red">读取书架失败: ${e.message}</span>`;
+    }
+  });
+
+  els.wereadSearchKey.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+      const query = els.wereadSearchKey.value.trim();
+      if (!query) return;
+      els.wereadResultsList.innerHTML = '正在检索在线数据库...';
+      try {
+        const res = await fetch('/.netlify/functions/import-weread', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'searchBooks', query, limit: 10 })
+        });
+        const data = await res.json();
+        renderBooksList(data.books || []);
+      } catch (e) {
+        els.wereadResultsList.innerHTML = `<span style="color:red">检索失败: ${e.message}</span>`;
+      }
+    }
+  });
+
+  function renderBooksList(books) {
+    els.wereadResultsList.innerHTML = '';
+    if (books.length === 0) {
+      els.wereadResultsList.innerHTML = '未找到相匹配的书籍项目';
+      return;
+    }
+    books.forEach(b => {
+      const item = document.createElement('div');
+      item.style.padding = '8px';
+      item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+      item.style.cursor = 'pointer';
+      item.style.display = 'flex';
+      item.style.gap = '8px';
+      item.innerHTML = `
+        <img src="${b.cover || ''}" style="width:30px; height:42px; object-fit:cover; border-radius:2px;">
+        <div style="flex:1;">
+          <div style="font-weight:700; color:#fff;">${b.title}</div>
+          <div style="color:var(--text-muted); font-size:11px;">${b.author}</div>
+        </div>
+      `;
+      item.addEventListener('click', () => {
+        els.inputTitle.value = b.title;
+        els.inputAuthor.value = b.author;
+        showToast(`已选择《${b.title}》, 正在抓取该书读书笔记及高亮划线...`);
+        importBookNotebooks(b.bookId);
+      });
+      els.wereadResultsList.appendChild(item);
+    });
+  }
+
+  async function importBookNotebooks(bookId) {
+    try {
+      const res = await fetch('/.netlify/functions/import-weread', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'importBook', bookId })
+      });
+      const data = await res.json();
+      if (data.materials && data.materials.trim().length > 10) {
+        els.inputMaterials.value = data.materials;
+        showToast('读书笔记、划线材料抓取导入就绪，请完善目标并提交拆解！');
+      } else {
+        // Fallback for books without notes or highlights
+        els.inputMaterials.value = `书名：《${els.inputTitle.value}》\n作者：${els.inputAuthor.value}\n（该书在微信读书中暂无高亮或笔记材料。小鹿 AI 拆书工坊将根据该书籍的商业逻辑架构、公开核心模型、书评简介及行业应用场景，对本书进行全方位的决策级深度拆解与战略迁移。）`;
+        showToast('已同步书籍基本信息，您可贴入原书材料或直接进行拆书！');
+      }
+      // Toggles tab back to GENERAL view so they can see the filled inputs
+      els.modeTabGeneral.click();
+    } catch (e) {
+      showToast(`读书笔记同步失败: ${e.message}`, 'error');
+    }
+  }
+
+  // Bind the WeRead split report button directly to click the general split button
+  els.generateReportBtnWeRead.addEventListener('click', () => {
+    els.generateReportBtn.click();
+  });
+
+  // ==========================================================================
+  // V2 Supabase Cloud Synchronization & CRUD Logic
+  // ==========================================================================
+  let supabaseClient = null;
+  let loadedLibraryRecordsV2 = [];
+
+  function getCategoryLabel(cat) {
+    const categoryMap = {
+      strategy: '战略与商业模式',
+      growth: '市场增长与运营',
+      product: '产品研发与创新',
+      manage: '组织效率与管理',
+      cognitive: '认知升级与心智'
+    };
+    return categoryMap[cat] || cat;
+  }
+
+  function getDepthLabel(dep) {
+    const depthMap = {
+      standard: '标准版',
+      deep: '深度版',
+      action: '行动版',
+      team: '团队版'
+    };
+    return depthMap[dep] || dep;
+  }
+
+  async function initSupabase() {
+    try {
+      const res = await fetch('/.netlify/functions/supabase-config');
+      const config = await res.json();
+      if (config.supabaseUrl && config.supabaseKey) {
+        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseKey);
+        console.log('V2 Supabase client initialized!');
+        els.supabaseStatusDot.style.backgroundColor = '#00ff87';
+        els.supabaseStatusText.textContent = '📡 Supabase 云端同步已就绪';
+        return true;
+      }
+    } catch (e) {
+      console.warn('Failed to load Supabase config, using localStorage:', e);
+    }
+    els.supabaseStatusDot.style.backgroundColor = 'var(--text-muted)';
+    els.supabaseStatusText.textContent = '💾 仅本地存储模式 (配置 Supabase)';
+    return false;
+  }
+
+  function getLibraryLocalV2() {
+    try {
+      return JSON.parse(localStorage.getItem('xiaolu-chaishu-library-v2') || '[]');
+    } catch(e) {
+      return [];
+    }
+  }
+
+  async function loadLibraryDataV2() {
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('xiaolu_reports')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        
+        loadedLibraryRecordsV2 = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          author: item.author || '',
+          category: item.category || 'strategy',
+          categoryLabel: getCategoryLabel(item.category),
+          depth: item.depth || 'deep',
+          depthLabel: getDepthLabel(item.depth),
+          goal: item.goal || '',
+          background: item.background || '',
+          materials: item.materials || '',
+          report: item.report || '',
+          chunks: item.chunks || [],
+          parsed_json: item.parsed_json || null,
+          skill_markdown: item.skill_markdown || item.skillMarkdown || '',
+          images_json: item.images_json || item.imagesJson || null,
+          createdAt: new Date(item.created_at).getTime()
+        }));
+      } catch (e) {
+        console.error('Supabase query failed, falling back to localStorage:', e);
+        loadedLibraryRecordsV2 = getLibraryLocalV2();
+      }
+    } else {
+      loadedLibraryRecordsV2 = getLibraryLocalV2();
+    }
+  }
+
+  async function renderLibraryV2() {
+    els.v2LibraryList.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:50px 0;">正在从 Supabase 云端加载战略成果...</div>';
+    await loadLibraryDataV2();
+
+    if (loadedLibraryRecordsV2.length === 0) {
+      els.v2LibraryList.innerHTML = `
+        <div style="color:var(--text-muted); text-align:center; padding:80px 0; border:1px dashed var(--glass-border); border-radius:12px; background:rgba(0,0,0,0.1);">
+          📭 书库暂无已保存的成果。<br><br>
+          <span style="font-size:12px; color:var(--text-muted);">生成决策报告后，在报告页面点击「💾 保存到决策库」以沉淀数据。</span>
+        </div>
+      `;
+      return;
+    }
+
+    els.v2LibraryList.innerHTML = loadedLibraryRecordsV2.map((record, index) => {
+      const meta = [record.author, record.categoryLabel, record.depthLabel, new Date(record.createdAt).toLocaleDateString()].filter(Boolean).join(' · ');
+      return `
+        <div class="panel-card" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; margin-bottom:12px; border-color:var(--glass-border); background:var(--glass-bg);">
+          <div>
+            <h4 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:4px;">《${escapeHtml(record.title)}》</h4>
+            <div style="font-size:12px; color:var(--text-muted);">${escapeHtml(meta)}</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn" style="padding:6px 12px; font-size:12px;" onclick="loadLibraryReportV2(${index})">📂 载入决策舱</button>
+            <button class="btn delete danger" style="padding:6px 12px; font-size:12px;" onclick="deleteLibraryReportV2('${record.id}')">🗑️ 删除</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.loadLibraryReportV2 = function(index) {
+    const record = loadedLibraryRecordsV2[index];
+    if (!record) return;
+
+    state.reportMarkdown = record.report || '';
+    state.chunks = record.chunks || [];
+    state.reportHtml = renderMarkdownToHtml(state.reportMarkdown);
+    els.reportRenderedBox.innerHTML = state.reportHtml;
+
+    renderCitationsList(els.reportCitationList);
+
+    state.parsedJSON = record.parsed_json || null;
+    populateFlashcards();
+
+    els.inputTitle.value = record.title || '';
+    els.inputAuthor.value = record.author || '';
+    els.inputGoal.value = record.goal || '';
+    els.inputBackground.value = record.background || '';
+    els.inputMaterials.value = record.materials || '';
+
+    state.skillMarkdown = record.skill_markdown || record.skillMarkdown || '';
+    state.currentRecordId = record.id || null;
+
+    // Restore infographic states
+    state.generatedImages = record.images_json || record.imagesJson || {};
+    const imgBox1 = document.getElementById('info-img-box-1');
+    const imgBox2 = document.getElementById('info-img-box-2');
+    const imgBox3 = document.getElementById('info-img-box-3');
+    
+    if (imgBox1) {
+      const url = state.generatedImages['strategy_card'];
+      imgBox1.innerHTML = url 
+        ? `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${url}', 'strategy_card')" title="点击查看大图">`
+        : '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+    }
+    if (imgBox2) {
+      const url = state.generatedImages['execution_poster'];
+      imgBox2.innerHTML = url 
+        ? `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${url}', 'execution_poster')" title="点击查看大图">`
+        : '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+    }
+    if (imgBox3) {
+      const url = state.generatedImages['team_mindmap'];
+      imgBox3.innerHTML = url 
+        ? `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${url}', 'team_mindmap')" title="点击查看大图">`
+        : '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+    }
+
+    // Enable action buttons
+    els.zipDownloadInfographicsBtn.disabled = false;
+    els.saveReportToLibraryBtn.disabled = false;
+    els.distillSkillBtn.disabled = false;
+
+    showToast(`成功载入《${record.title}》的决策资源！`);
+    
+    // Switch to report tab
+    document.querySelector('[data-view="view-report"]').click();
+  };
+
+  els.saveReportToLibraryBtn.addEventListener('click', async () => {
+    if (!state.reportMarkdown) return;
+    
+    const record = {
+      title: els.inputTitle.value.trim() || '未定义书籍',
+      author: els.inputAuthor.value.trim() || '未知作者',
+      category: 'strategy',
+      depth: 'deep',
+      goal: els.inputGoal.value.trim(),
+      background: els.inputBackground.value.trim(),
+      materials: els.inputMaterials.value.trim(),
+      report: state.reportMarkdown,
+      chunks: state.chunks,
+      parsed_json: state.parsedJSON,
+      skill_markdown: state.skillMarkdown || '',
+      images_json: state.generatedImages || {}
+    };
+
+    if (supabaseClient) {
+      showToast('正在同步保存至 Supabase 云端...');
+      try {
+        let result;
+        if (state.currentRecordId && state.currentRecordId.length > 20) {
+          result = await supabaseClient
+            .from('xiaolu_reports')
+            .update(record)
+            .eq('id', state.currentRecordId);
+        } else {
+          result = await supabaseClient
+            .from('xiaolu_reports')
+            .insert([record])
+            .select();
+          if (result.data && result.data[0]) {
+            state.currentRecordId = result.data[0].id;
+          }
+        }
+        if (result.error) throw result.error;
+        showToast('战略报告与技能包已同步至 Supabase 云数据库！');
+      } catch (err) {
+        console.error('Supabase save failed, saving to localStorage:', err);
+        saveLocalV2(record);
+      }
+    } else {
+      saveLocalV2(record);
+    }
+    
+    // Refresh roundtable advisors list
+    await renderRoundtableAdvisorsV2();
+  });
+
+  function saveLocalV2(record) {
+    const records = getLibraryLocalV2();
+    const existingIndex = state.currentRecordId ? records.findIndex(r => r.id === state.currentRecordId) : -1;
+    
+    if (existingIndex !== -1) {
+      records[existingIndex] = {
+        ...records[existingIndex],
+        ...record,
+        categoryLabel: getCategoryLabel(record.category),
+        depthLabel: getDepthLabel(record.depth)
+      };
+      localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      loadedLibraryRecordsV2 = records; // Sync in-memory array!
+      showToast('战略报告与技能包已在本地更新保存。');
+    } else {
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      state.currentRecordId = id;
+      const newRec = {
+        id,
+        ...record,
+        categoryLabel: getCategoryLabel(record.category),
+        depthLabel: getDepthLabel(record.depth),
+        createdAt: Date.now()
+      };
+      records.unshift(newRec);
+      localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      loadedLibraryRecordsV2 = records; // Sync in-memory array!
+      showToast('战略报告已保存至本地书卡库缓存中。');
+    }
+  }
+
+  window.deleteLibraryReportV2 = async function(id) {
+    if (supabaseClient) {
+      const isUuid = id.length > 20;
+      if (isUuid) {
+        showToast('正在从 Supabase 删除...');
+        try {
+          const { error } = await supabaseClient
+            .from('xiaolu_reports')
+            .delete()
+            .eq('id', id);
+          if (error) throw error;
+          showToast('已从 Supabase 云端删除记录！');
+        } catch (e) {
+          console.error('Supabase delete failed:', e);
+          showToast('删除云端记录失败: ' + e.message);
+          return;
+        }
+      } else {
+        deleteLocalV2(id);
+      }
+    } else {
+      deleteLocalV2(id);
+    }
+    if (state.currentRecordId === id) {
+      state.currentRecordId = null;
+      state.skillMarkdown = '';
+    }
+    await renderLibraryV2();
+  };
+
+  function deleteLocalV2(id) {
+    const records = getLibraryLocalV2().filter(x => x.id !== id);
+    localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+    showToast('已从本地缓存中删除记录。');
+  }
+
+  // --- Skill Distillation Logic ---
+  let activeSkillRecordId = null;
+
+  async function distillSkillV2(recordToDistill = null) {
+    const isLibraryDirect = recordToDistill !== null;
+    const title = isLibraryDirect ? recordToDistill.title : els.inputTitle.value.trim();
+    const author = isLibraryDirect ? recordToDistill.author : els.inputAuthor.value.trim();
+    const reportText = isLibraryDirect ? recordToDistill.report : state.reportMarkdown;
+
+    if (!title || !reportText) {
+      showToast('没有可供蒸馏的报告内容！');
+      return;
+    }
+
+    let btn;
+    if (isLibraryDirect) {
+      btn = document.getElementById(`distill-btn-${recordToDistill.id}`);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ 蒸馏中...';
+      }
+    } else {
+      btn = els.distillSkillBtn;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ 正在蒸馏为 AI 技能...';
+    }
+
+    try {
+      showToast(`正在将《${title}》蒸馏为 AI 技能包...`);
+      const res = await fetch('/.netlify/functions/v2-distill-skill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, author, reportText })
+      });
+      
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(result.error || '技能蒸馏服务异常');
+      }
+
+      const distilledMarkdown = result.skillMarkdown || '';
+      
+      if (isLibraryDirect) {
+        recordToDistill.skill_markdown = distilledMarkdown;
+        recordToDistill.skillMarkdown = distilledMarkdown;
+        
+        if (supabaseClient) {
+          const isUuid = recordToDistill.id.length > 20;
+          if (isUuid) {
+            await supabaseClient
+              .from('xiaolu_reports')
+              .update({ skill_markdown: distilledMarkdown })
+              .eq('id', recordToDistill.id);
+          } else {
+            updateLocalSkillV2(recordToDistill.id, distilledMarkdown);
+          }
+        } else {
+          updateLocalSkillV2(recordToDistill.id, distilledMarkdown);
+        }
+
+        await renderSkillsListV2();
+        loadAndDisplaySkill(recordToDistill);
+        showToast(`《${title}》已成功蒸馏并自动保存！`);
+      } else {
+        state.skillMarkdown = distilledMarkdown;
+        showToast(`《${title}》已成功蒸馏为 AI 技能包！`);
+        
+        document.querySelector('[data-view="view-skills"]').click();
+        
+        els.skillViewerTitle.textContent = `🔍 《${title}》技能包预览 (SKILL.md)：`;
+        els.skillRenderedBox.textContent = distilledMarkdown;
+        els.copySkillCodeBtn.disabled = false;
+        els.downloadSkillBtn.disabled = false;
+
+        if (state.currentRecordId) {
+          if (supabaseClient) {
+            const isUuid = state.currentRecordId.length > 20;
+            if (isUuid) {
+              await supabaseClient
+                .from('xiaolu_reports')
+                .update({ skill_markdown: distilledMarkdown })
+                .eq('id', state.currentRecordId);
+            } else {
+              updateLocalSkillV2(state.currentRecordId, distilledMarkdown);
+            }
+          } else {
+            updateLocalSkillV2(state.currentRecordId, distilledMarkdown);
+          }
+          await renderSkillsListV2();
+        }
+      }
+    } catch (e) {
+      showToast(`蒸馏失败: ${e.message}`, 'error');
+    } finally {
+      if (isLibraryDirect) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '🛠️ 立即蒸馏';
+        }
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '🛠️ 蒸馏为 AI 技能';
+      }
+    }
+  }
+
+  function updateLocalSkillV2(id, skillMarkdown) {
+    const records = getLibraryLocalV2();
+    const idx = records.findIndex(r => r.id === id);
+    if (idx !== -1) {
+      records[idx].skill_markdown = skillMarkdown;
+      records[idx].skillMarkdown = skillMarkdown;
+      localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+    }
+  }
+
+  function loadAndDisplaySkill(record) {
+    activeSkillRecordId = record.id;
+    state.skillMarkdown = record.skill_markdown || record.skillMarkdown || '';
+    
+    document.querySelectorAll('.skill-list-card').forEach(card => {
+      card.style.borderColor = 'var(--glass-border)';
+      card.style.background = 'rgba(255,255,255,0.02)';
+    });
+    
+    const selectedCard = document.getElementById(`skill-card-${record.id}`);
+    if (selectedCard) {
+      selectedCard.style.borderColor = 'var(--cyan-neon)';
+      selectedCard.style.background = 'rgba(0, 243, 255, 0.05)';
+    }
+
+    if (state.skillMarkdown) {
+      els.skillViewerTitle.textContent = `🔍 《${record.title}》技能包预览 (SKILL.md)：`;
+      els.skillRenderedBox.textContent = state.skillMarkdown;
+      els.copySkillCodeBtn.disabled = false;
+      els.downloadSkillBtn.disabled = false;
+    } else {
+      els.skillViewerTitle.textContent = `🔍 《${record.title}》技能包预览 (SKILL.md)：`;
+      els.skillRenderedBox.innerHTML = `
+        <div style="color:var(--text-muted); text-align:center; padding:120px 0;">
+          💡 该书尚未蒸馏技能包。<br><br>
+          <button class="btn purple" style="font-size:12px; padding:6px 14px;" onclick="window.triggerListDistill('${record.id}')">🛠️ 立即蒸馏</button>
+        </div>
+      `;
+      els.copySkillCodeBtn.disabled = true;
+      els.downloadSkillBtn.disabled = true;
+    }
+  }
+
+  window.triggerListDistill = function(id) {
+    const record = loadedLibraryRecordsV2.find(r => r.id === id);
+    if (record) {
+      distillSkillV2(record);
+    }
+  };
+
+  window.selectSkillBook = function(id) {
+    const record = loadedLibraryRecordsV2.find(r => r.id === id);
+    if (record) {
+      if (!els.inputTitle.value) els.inputTitle.value = record.title;
+      if (!els.inputAuthor.value) els.inputAuthor.value = record.author;
+      loadAndDisplaySkill(record);
+    }
+  };
+
+  async function renderSkillsListV2() {
+    await loadLibraryDataV2();
+
+    if (loadedLibraryRecordsV2.length === 0) {
+      els.skillsBookList.innerHTML = `
+        <div style="color:var(--text-muted); font-size:12px; text-align:center; padding:30px 0;">
+          暂无保存的书籍，请先生成拆解报告并保存到书库。
+        </div>
+      `;
+      return;
+    }
+
+    els.skillsBookList.innerHTML = loadedLibraryRecordsV2.map(record => {
+      const hasSkill = !!(record.skill_markdown || record.skillMarkdown);
+      const badge = hasSkill 
+        ? `<span class="badge" style="background:rgba(0,255,135,0.15); color:#00ff87; border:1px solid rgba(0,255,135,0.3); font-size:11px; padding:2px 8px; border-radius:10px;">✅ 已蒸馏</span>`
+        : `<span class="badge" style="background:rgba(255,255,255,0.05); color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); font-size:11px; padding:2px 8px; border-radius:10px;">❌ 未蒸馏</span>`;
+      
+      const actionButton = hasSkill 
+        ? '' 
+        : `<button class="btn purple" id="distill-btn-${record.id}" style="font-size:11px; padding:4px 10px;" onclick="event.stopPropagation(); window.triggerListDistill('${record.id}')">🛠️ 立即蒸馏</button>`;
+
+      return `
+        <div class="panel-card skill-list-card" id="skill-card-${record.id}" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(255,255,255,0.02); cursor:pointer; transition:all 0.3s ease;" onclick="window.selectSkillBook('${record.id}')">
+          <div style="display:flex; flex-direction:column; gap:4px; max-width:65%;">
+            <h4 style="font-size:13.5px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0;">《${escapeHtml(record.title)}》</h4>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${badge}
+            </div>
+          </div>
+          <div>
+            ${actionButton}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (activeSkillRecordId) {
+      const activeRecord = loadedLibraryRecordsV2.find(r => r.id === activeSkillRecordId);
+      if (activeRecord) {
+        loadAndDisplaySkill(activeRecord);
+      }
+    }
+    // Synchronize roundtable advisors list
+    renderRoundtableAdvisorsV2();
+  }
+
+  // --- Distill Skill Event Listeners ---
+  els.distillSkillBtn.addEventListener('click', () => {
+    distillSkillV2();
+  });
+
+  els.copySkillCodeBtn.addEventListener('click', () => {
+    if (!state.skillMarkdown) return;
+    navigator.clipboard.writeText(state.skillMarkdown)
+      .then(() => showToast('Skill 代码已复制到剪贴板！'))
+      .catch(err => {
+        console.error('Copy failed:', err);
+        showToast('复制失败，请手动选择并复制。');
+      });
+  });
+
+  els.downloadSkillBtn.addEventListener('click', () => {
+    if (!state.skillMarkdown) return;
+    const title = els.inputTitle.value.trim() || 'Book';
+    const safeTitle = title
+      .toLowerCase()
+      .replace(/[^\u4e00-\u9fa5a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    
+    const fileName = `${safeTitle}-SKILL.md`;
+    const blob = new Blob([state.skillMarkdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`技能包 ${fileName} 下载成功！`);
+  });
+
+  // --- Dynamic Roundtable Advisors & Lightbox Support ---
+  async function renderRoundtableAdvisorsV2() {
+    const listContainer = document.getElementById('roundtable-dynamic-skills');
+    if (!listContainer) return;
+
+    await loadLibraryDataV2();
+
+    const booksWithSkills = loadedLibraryRecordsV2.filter(r => !!(r.skill_markdown || r.skillMarkdown));
+    
+    if (booksWithSkills.length === 0) {
+      listContainer.innerHTML = `<span style="color:var(--text-muted); font-size:11.5px;">暂无已保存的书灵</span>`;
+      return;
+    }
+
+    listContainer.innerHTML = booksWithSkills.map(record => {
+      const isCurrentBook = state.currentRecordId === record.id;
+      const checkedAttr = isCurrentBook ? 'checked' : '';
+      return `
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; line-height:1.4;" title="《${escapeHtml(record.title)}》书灵">
+          <input type="checkbox" class="author-chk" value="《${escapeHtml(record.title)}》书灵" data-skill-id="${record.id}" ${checkedAttr}>
+          <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;">《${escapeHtml(record.title)}》书灵</span>
+        </label>
+      `;
+    }).join('');
+  }
+  window.renderRoundtableAdvisorsV2 = renderRoundtableAdvisorsV2;
+
+  async function downloadImageCorsProof(url, filename) {
+    if (!url) return;
+    try {
+      let blobUrl;
+      if (url.startsWith('data:')) {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        blobUrl = URL.createObjectURL(blob);
+      } else {
+        const resp = await fetch(url, { mode: 'cors' });
+        const blob = await resp.blob();
+        blobUrl = URL.createObjectURL(blob);
+      }
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+      showToast('图片下载成功！');
+    } catch (err) {
+      console.warn('CORS blob download failed, opening in new tab instead:', err);
+      window.open(url, '_blank');
+      showToast('已在新窗口打开，请长按或右键另存为图片。');
+    }
+  }
+
+  window.openImageLightbox = function(imgUrl, cardType) {
+    const modal = document.getElementById('image-lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    const downloadBtn = document.getElementById('lightbox-download-btn');
+    if (!modal || !img || !downloadBtn) return;
+    
+    img.src = imgUrl;
+    modal.style.display = 'flex';
+    
+    downloadBtn.onclick = function() {
+      const title = els.inputTitle.value.trim() || '书籍';
+      const filename = `小鹿AI拆书-V2-${cardType}-${title}.png`;
+      downloadImageCorsProof(imgUrl, filename);
+    };
+  };
+
+  window.closeImageLightbox = function() {
+    const modal = document.getElementById('image-lightbox-modal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  // --- Dynamic Gallery, Local Image Saves & Image Downloads ---
+  function updateLocalImagesV2(id, imagesJson) {
+    const records = getLibraryLocalV2();
+    const idx = records.findIndex(r => r.id === id);
+    if (idx !== -1) {
+      records[idx].images_json = imagesJson;
+      records[idx].imagesJson = imagesJson;
+      localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      loadedLibraryRecordsV2 = records; // Sync in-memory array!
+    }
+  }
+
+  async function renderGalleryV2() {
+    const galleryEl = document.getElementById('infographics-gallery');
+    if (!galleryEl) return;
+
+    galleryEl.innerHTML = `
+      <div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12px; text-align:center; padding:40px 0;">
+        ⏳ 正在同步云端图库...
+      </div>
+    `;
+
+    await loadLibraryDataV2();
+
+    // Collect all generated images across all loaded library records
+    const galleryItems = [];
+    loadedLibraryRecordsV2.forEach(record => {
+      const imgs = record.images_json || record.imagesJson;
+      if (imgs && typeof imgs === 'object') {
+        Object.keys(imgs).forEach(cardType => {
+          const imgUrl = imgs[cardType];
+          if (imgUrl) {
+            galleryItems.push({
+              record,
+              cardType,
+              imgUrl
+            });
+          }
+        });
+      }
+    });
+
+    if (galleryItems.length === 0) {
+      galleryEl.innerHTML = `
+        <div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12px; text-align:center; padding:40px 0; border:1px dashed var(--glass-border); border-radius:10px;">
+          📭 暂无已保存的决策图。在上方生成或从决策舱载入书籍，生成概念图即可。
+        </div>
+      `;
+      return;
+    }
+
+    const typeLabels = {
+      strategy_card: '💡 垄断定位与核心逻辑',
+      execution_poster: '📅 12个月业务执行时间表',
+      team_mindmap: '👥 团队协同与共学共识'
+    };
+
+    galleryEl.innerHTML = galleryItems.map(item => {
+      const typeLabel = typeLabels[item.cardType] || item.cardType;
+      return `
+        <div class="panel-card gallery-item" style="padding:12px; display:flex; flex-direction:column; gap:10px; background:rgba(255,255,255,0.02); border:1px solid var(--glass-border); border-radius:10px; transition:all 0.3s ease;">
+          <div style="width:100%; height:140px; background:rgba(0,0,0,0.3); border-radius:6px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="openImageLightbox('${item.imgUrl}', '${item.cardType}')">
+            <img src="${item.imgUrl}" style="width:100%; height:100%; object-fit:cover; transition:transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="点击放大">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:2px; min-height:36px;">
+            <div style="font-size:12.5px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0;" title="《${escapeHtml(item.record.title)}》">《${escapeHtml(item.record.title)}》</div>
+            <div style="font-size:10.5px; color:var(--text-muted);">${typeLabel}</div>
+          </div>
+          <button class="btn" style="padding:4px 8px; font-size:11px; justify-content:center; width:100%;" onclick="window.downloadGalleryImage('${item.imgUrl}', '${item.cardType}', '${escapeHtml(item.record.title)}')">💾 下载图片</button>
+        </div>
+      `;
+    }).join('');
+  }
+  window.renderGalleryV2 = renderGalleryV2;
+
+  window.downloadGalleryImage = function(imgUrl, cardType, title) {
+    const filename = `小鹿AI拆书-V2-${cardType}-${title}.png`;
+    downloadImageCorsProof(imgUrl, filename);
+  };
+
+  // Bootloader V2 startup
+  initSupabase();
+</script>
+</body>
+</html>

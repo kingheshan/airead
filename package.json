@@ -1,0 +1,17 @@
+{
+  "name": "xiaolu-ai-chaishu-workshop",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "deploy": "netlify deploy --prod",
+    "check": "node --check netlify/functions/generate-report.mjs && node --check netlify/functions/import-weread.mjs && node --check netlify/functions/weread-materials.mjs && node --check netlify/functions/generate-infographic.mjs && node --check lib/weread-adapter.mjs && node --check netlify/functions/v2-generate-report.mjs && node --check netlify/functions/v2-double-debate.mjs && node --check netlify/functions/v2-strategy-simulator.mjs && node --check netlify/functions/v2-roundtable-chat.mjs && node --check netlify/functions/v2-generate-infographic.mjs && node --check netlify/functions/supabase-config.mjs && node --check netlify/functions/v2-distill-skill.mjs"
+  },
+  "dependencies": {
+    "openai": "latest"
+  },
+  "devDependencies": {
+    "netlify-cli": "latest"
+  }
+}
