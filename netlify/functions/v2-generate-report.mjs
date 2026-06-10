@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
+import { promptText } from './prompt-text.mjs';
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
 const MAX_MATERIAL_CHARS = Number(process.env.MAX_MATERIAL_CHARS || 60000);
@@ -83,6 +84,9 @@ export async function handler(event) {
 }
 
 function loadSystemPrompt() {
+  if (promptText) {
+    return promptText;
+  }
   const paths = [
     path.resolve(process.cwd(), 'AIRead提示词.md'),
     path.resolve(process.cwd(), 'netlify/functions/AIRead提示词.md'),
