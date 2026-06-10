@@ -32,16 +32,17 @@ export function makeAdapter(handler) {
     // Set Netlify environment variables from EdgeOne environment variables
     if (env) {
       for (const [key, val] of Object.entries(env)) {
-        let decodedVal = val;
         if (key === 'OPENAI_API_KEY' && val) {
-          if (val.includes('__DOUBLE_DASH__')) {
-            decodedVal = val.replace(/__DOUBLE_DASH__/g, '--');
-          } else if (!val.startsWith('sk-')) {
+          const trimmedVal = val.trim();
+          let decodedVal = trimmedVal;
+          if (trimmedVal.includes('__DOUBLE_DASH__')) {
+            decodedVal = trimmedVal.replace(/__DOUBLE_DASH__/g, '--');
+          } else if (!trimmedVal.startsWith('sk-')) {
             let decoded = null;
             // 1. Try Hex decoding (Hex consists only of 0-9, a-f, A-F)
-            if (/^[0-9a-fA-F]+$/.test(val)) {
+            if (/^[0-9a-fA-F]+$/.test(trimmedVal)) {
               try {
-                const hexDecoded = Buffer.from(val, 'hex').toString('utf8');
+                const hexDecoded = Buffer.from(trimmedVal, 'hex').toString('utf8');
                 if (hexDecoded.startsWith('sk-')) {
                   decoded = hexDecoded;
                 }
@@ -50,7 +51,7 @@ export function makeAdapter(handler) {
             // 2. Try Base64 decoding (Base64 can have padding '=' or not)
             if (!decoded) {
               try {
-                const base64Decoded = Buffer.from(val, 'base64').toString('utf8');
+                const base64Decoded = Buffer.from(trimmedVal, 'base64').toString('utf8');
                 if (base64Decoded.startsWith('sk-')) {
                   decoded = base64Decoded;
                 }
@@ -60,8 +61,10 @@ export function makeAdapter(handler) {
               decodedVal = decoded;
             }
           }
+          process.env[key] = decodedVal.trim();
+        } else {
+          process.env[key] = val;
         }
-        process.env[key] = decodedVal;
       }
     }
     
