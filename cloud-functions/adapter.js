@@ -97,7 +97,7 @@ export function makeAdapter(handler) {
     
     // Standard response headers for all API requests
     const responseHeaders = new Headers();
-    responseHeaders.set('Content-Type', 'application/json; charset=utf-8');
+    responseHeaders.set('Content-Type', 'text/plain; charset=utf-8');
     responseHeaders.set('X-Accel-Buffering', 'no');
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type');

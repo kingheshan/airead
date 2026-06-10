@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 
 const getModel = () => {
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -39,7 +39,7 @@ export async function handler(event) {
     return json(400, { error: 'Missing required parameters: authors and messages list.' });
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
 
   let additionalSkillsInstructions = '';
   if (skillsContext && typeof skillsContext === 'object') {

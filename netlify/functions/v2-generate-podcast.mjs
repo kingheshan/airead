@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 
 const getModel = () => {
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -39,7 +39,7 @@ export async function handler(event) {
     return json(400, { error: '缺少书籍标题 title 或报告内容 report。' });
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
 
   try {
     // 1. Generate the spoken briefing script

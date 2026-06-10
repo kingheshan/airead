@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 
 const getModel = () => {
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -39,7 +39,7 @@ export async function handler(event) {
     return json(400, { error: 'Missing required parameters: title and scenario.' });
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
 
   const systemInstructions = `你是一个高精度的商业战略沙盘模拟算法引擎。
 你的任务是根据用户选择的书籍思想、当前面临的商业场景假设、团队和预算约束，模拟在未来12个月内该战略实施的推演轨迹。

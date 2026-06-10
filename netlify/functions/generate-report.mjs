@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 
 const getModel = () => {
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -45,7 +45,7 @@ export async function handler(event) {
   }
 
   const chunks = chunkMaterials(input.materials);
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
   const instructions = buildSystemInstructions();
   const userPrompt = buildUserPrompt(input, chunks);
   try {

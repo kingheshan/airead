@@ -1,7 +1,7 @@
 import fs from 'fs';
 import vm from 'vm';
 
-const htmlContent = fs.readFileSync('v2/index.html', 'utf8');
+const htmlContent = fs.readFileSync('index.html', 'utf8');
 
 // Find all script blocks
 const regex = /<script>([\s\S]*?)<\/script>/gi;
@@ -34,8 +34,8 @@ while ((match = regex.exec(htmlContent)) !== null) {
 }
 
 if (count === 0) {
-  console.error('No script blocks found in v2/index.html!');
+  console.error('No script blocks found in index.html!');
   process.exit(1);
 } else {
-  console.log(`Successfully verified ${count} script blocks in v2/index.html.`);
+  console.log(`Successfully verified ${count} script blocks in index.html.`);
 }

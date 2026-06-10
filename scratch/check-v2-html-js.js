@@ -2,7 +2,7 @@ import fs from 'fs';
 import vm from 'vm';
 
 function main() {
-  const filePath = '/Users/king/Desktop/xiaoluAIRead/v2/index.html';
+  const filePath = '/Users/king/Desktop/xiaoluAIRead/index.html';
   if (!fs.existsSync(filePath)) {
     console.error('v2/index.html not found');
     process.exit(1);

@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 import fs from 'fs';
 import path from 'path';
 import { promptText } from './prompt-text.mjs';
@@ -48,20 +48,20 @@ export async function handler(event) {
   }
 
   const chunks = chunkMaterials(input.materials);
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
   
   // Load prompt dynamically from AIRead提示词.md
   let instructions = loadSystemPrompt();
   if (!instructions) {
     return json(500, { error: '未找到 AIRead提示词.md 文件，请确认其放置在项目根目录。' });
   }
-  // Append conciseness rules to prevent timeouts (limit output tokens)
-  instructions += `\n\n【极其重要的生成字数限制与极速响应规则 (CRITICAL SPEED & CONCISENESS RULE)】:
-为了防止接口超时，你必须以极度精炼、字字珠玑的方式进行输出：
-1. 报告必须包含全部 25 个部分，但每个部分仅输出 1-2 句最核心的要点/结论/行动指南（如果是列表或矩阵，限制在最多 2-3 个条目/人物，且每个人物/条目仅用 1 句话概括）。
-2. 严禁冗长废话与背景铺垫。必须句句是干货，直接给结论、模型或痛点，避免大篇幅段落。
-3. 全文的 Markdown 文本（不含末尾的 JSON 沉淀块）总字数应控制在 1500-2500 字以内，以保证在 20-30 秒内输出完毕。
-4. 最后的 JSON 沉淀块格式必须完整且正确，但里面沉淀的条目也不要过多（每个数组限制在 2 个对象即可）。`;
+  // Append moderate length constraint to prompt to balance speed and detail
+  instructions += `\n\n【生成篇幅与效率要求 (PERFORMANCE & DETAIL BALANCE)】:
+为了保证系统响应速度，避免网关超时，请在保持极高拆解质量的前提下极度控制篇幅：
+1. 报告仅需包含第 0 至 12 部分（即：“0. 材料边界与可信度说明” 至 “12. 中国顶级产业实战视角矩阵”），绝对禁止生成之后的第 13-25 部分。
+2. 每个部分仅需输出 1 句最核心的结论/行动指南，严禁任何冗长铺垫和废话，字字珠玑，直切要害。
+3. 严禁在最后输出任何 JSON 沉淀块。
+4. 全文的 Markdown 总字数必须控制在 800-1200 字之间。`;
 
   const userPrompt = buildUserPrompt(input, chunks);
 
@@ -70,42 +70,16 @@ export async function handler(event) {
   
   try {
     console.log(`[V2] Requesting report generation with model ${usedModel}...`);
-    const isReasoningModel = usedModel.includes('5.5') || usedModel.startsWith('o1') || usedModel.startsWith('o3');
-    
-    if (isReasoningModel) {
-      // Set timeout to 25 seconds for reasoning models to avoid CDN timeout limit (typically 15s-30s)
-      try {
-        response = await client.responses.create({
-          model: usedModel,
-          instructions,
-          input: userPrompt,
-          max_output_tokens: getMaxOutputTokens(),
-          ...(process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
-        }, { timeout: 25000 });
-      } catch (err) {
-        // Fallback to gpt-4o if it timed out or hit another API connection issue
-        const isTimeout = err.name === 'APIConnectionTimeoutError' || err.message?.includes('timeout') || err.message?.includes('Timeout') || err.message?.includes('aborted');
-        if (isTimeout) {
-          console.warn(`[V2] Model ${usedModel} timed out. Falling back to gpt-4o...`);
-          usedModel = 'gpt-4o';
-          response = await client.responses.create({
-            model: usedModel,
-            instructions,
-            input: userPrompt,
-            max_output_tokens: getMaxOutputTokens()
-          });
-        } else {
-          throw err;
-        }
-      }
-    } else {
-      response = await client.responses.create({
-        model: usedModel,
-        instructions,
-        input: userPrompt,
-        max_output_tokens: getMaxOutputTokens()
-      });
-    }
+    // Set explicit timeout of 18 seconds for the primary model call
+    response = await client.responses.create({
+      model: usedModel,
+      instructions,
+      input: userPrompt,
+      max_output_tokens: getMaxOutputTokens(),
+      ...(process.env.OPENAI_REASONING_EFFORT && (usedModel.startsWith('o1') || usedModel.startsWith('o3'))
+         ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } }
+         : {})
+    }, { timeout: 28000 });
 
     return json(200, {
       report: response.output_text || '',
@@ -115,31 +89,28 @@ export async function handler(event) {
       chunks: chunks
     });
   } catch (error) {
-    // If the configured model failed for any reason, try gpt-4o as a final fallback
-    if (usedModel !== 'gpt-4o') {
-      try {
-        console.warn(`[V2] Request with ${usedModel} failed (${error.message}). Final fallback to gpt-4o...`);
-        usedModel = 'gpt-4o';
-        const fallbackResponse = await client.responses.create({
-          model: usedModel,
-          instructions,
-          input: userPrompt,
-          max_output_tokens: getMaxOutputTokens()
-        });
-        return json(200, {
-          report: fallbackResponse.output_text || '',
-          model: usedModel,
-          truncated: input.truncated,
-          generatedAt: new Date().toISOString(),
-          chunks: chunks
-        });
-      } catch (fallbackError) {
-        console.error('[V2] Both primary and fallback models failed:', fallbackError);
-      }
+    // If primary model failed or timed out, fall back to gpt-4o-mini to guarantee response speed
+    console.warn(`[V2] Primary model ${usedModel} failed or timed out: ${error.message}. Falling back to gpt-4o-mini...`);
+    try {
+      usedModel = 'gpt-4o-mini';
+      const fallbackResponse = await client.responses.create({
+        model: usedModel,
+        instructions,
+        input: userPrompt,
+        max_output_tokens: getMaxOutputTokens()
+      }, { timeout: 25000 }); // 25s timeout for fallback
+
+      return json(200, {
+        report: fallbackResponse.output_text || '',
+        model: usedModel,
+        truncated: input.truncated,
+        generatedAt: new Date().toISOString(),
+        chunks: chunks
+      });
+    } catch (fallbackError) {
+      console.error('[V2] Both primary and fallback models failed:', fallbackError);
+      return json(502, { error: `报告生成失败: ${error.message}. 备用模型也失败: ${fallbackError.message}` });
     }
-    console.error('[V2] generate-report error:', error);
-    const message = error?.message || 'OpenAI API request failed.';
-    return json(502, { error: message });
   }
 }
 
@@ -215,16 +186,14 @@ function buildUserPrompt(input, chunks = []) {
 可用材料：
 ${input.truncated ? `注意：材料过长，系统已截断到前 ${getMaxMaterialChars()} 字。\n` : ''}${formattedMaterials}
 
-请选择使用“CEO 作战模式”（深度拆解模式），开始生成包含 25 个部分的完整认知操作系统，并在报告最后输出符合规范的 JSON 沉淀块。
+请选择使用“CEO 作战模式”（深度拆解模式），开始生成包含第 0 至 12 部分的拆书报告，不要生成之后的其他模块内容或最后的 JSON 沉淀块。
 
-【极其重要的极速输出要求 (CRITICAL PERFORMANCE REQUIREMENT)】：
-为了防止接口超时，你必须以极度精炼、字字珠玑的方式进行输出：
-1. 必须覆盖全部 25 个部分，但每个部分仅输出 1-2 句最核心的内容/结论/建议。
-2. 凡是涉及到矩阵、列表、条目的部分（例如第11部分“全球顶级人物视角矩阵”、第12部分“中国顶级产业实战视角矩阵”），每个人物或条目只用一句话提炼其核心观点，且最多只提供 2 个人物/条目，绝不展开铺开写。
-3. 严格禁止任何多余的转折、寒暄、铺垫 and 背景介绍，直接给出结论和行动指南。
-4. 全文的 Markdown 文本（不含最后第25部分的 JSON）总长度必须控制在 1500-2500 字以内，字数越少、结论越犀利越好，绝不拖泥带水。
-5. 第25部分的 JSON 必须包含在 Markdown 的 \`\`\`json 块中，并且字段和结构必须与模板完全一致，但里面的数组不要包含多于 2 个的对象元素，保持数据精炼。
-确保能够以极高的效率（在 25 秒内）返回完整的拆书报告。`;
+【生成篇幅与效率要求 (PERFORMANCE & DETAIL BALANCE)】：
+为了保证系统响应速度，避免网关超时，请在保持极高拆解质量的前提下极度控制篇幅：
+1. 仅包含第 0 至 12 部分（即：“0. 材料边界与可信度说明” 至 “12. 中国顶级产业实战视角矩阵”），不需要生成第 13 部分及以后的任何内容。
+2. 每个部分仅需输出 1 句最核心的要点、结论与策略建议，严禁任何冗长铺垫和废话，直接给出结论 and 行动指南。
+3. 严禁在最后输出任何 JSON 沉淀块。
+4. 全文的 Markdown 总字数必须控制在 800-1200 字之间。`;
 }
 
 function json(statusCode, payload) {

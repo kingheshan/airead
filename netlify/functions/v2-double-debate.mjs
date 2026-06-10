@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 
 const getModel = () => {
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -39,7 +39,7 @@ export async function handler(event) {
     return json(400, { error: 'Missing required parameters: author1, author2, and query.' });
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
 
   const systemInstructions = `你是一个顶级商业思想辩论模拟器。
 你的任务是模拟两位商业领袖/原著作者，针对用户提出的“商业困境或痛点”，展开一场针锋相对的学术辩论，并在辩论结束时给出一份融合双方智慧的“业务共识行动指南”。

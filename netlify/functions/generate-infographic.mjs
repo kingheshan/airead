@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,7 +33,7 @@ export async function handler(event) {
     return json(400, { error: '缺少书籍标题 title。' });
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
 
   // Visual prompt engineering for clean, modern conceptual infographics
   const prompt = `A professional, premium conceptual infographic card and mind map for the book "${title}" by "${author || 'Unknown Author'}". 

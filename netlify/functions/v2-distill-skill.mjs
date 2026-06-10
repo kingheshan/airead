@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getOpenAIClient } from './openai-helper.mjs';
 
 const getModel = () => {
   const model = process.env.OPENAI_MODEL || 'gpt-4o';
@@ -39,7 +39,7 @@ export async function handler(event) {
     return json(400, { error: 'Missing required parameters: title and reportText.' });
   }
 
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = getOpenAIClient();
 
   const systemInstructions = `你是一个顶级 AI 技能包蒸馏官（AI Skill Compiler）。
 你的任务是将一份关于特定书籍的深度拆书报告，重构并蒸馏为一个符合 Antigravity/AGY 规范的 AI 技能指令包（SKILL.md）。
