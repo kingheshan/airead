@@ -1,7 +1,10 @@
 import OpenAI from 'openai';
 
 export function getOpenAIClient() {
-  const key = (process.env.OPENAI_API_KEY || '').trim();
+  let key = (process.env.OPENAI_API_KEY || '').trim();
+  if (!key) {
+    key = (process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY || '').trim();
+  }
   
   let baseURL = undefined;
   let isDeepSeek = false;
@@ -15,6 +18,9 @@ export function getOpenAIClient() {
     baseURL = process.env.OPENAI_BASE_URL;
   } else if (process.env.OPENAI_BASE_URL) {
     baseURL = process.env.OPENAI_BASE_URL;
+  } else if (process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY) {
+    isDeepSeek = true;
+    baseURL = 'https://api.deepseek.com/v1';
   }
 
   const client = new OpenAI({

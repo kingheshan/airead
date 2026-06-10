@@ -31,9 +31,15 @@ function decodeKey(val) {
   return decodedVal.trim();
 }
 
-// Decode OPENAI_API_KEY on startup if present in process.env
+// Decode key variables on startup if present in process.env
 if (process.env.OPENAI_API_KEY) {
   process.env.OPENAI_API_KEY = decodeKey(process.env.OPENAI_API_KEY);
+}
+if (process.env.DEEPSEEK) {
+  process.env.DEEPSEEK = decodeKey(process.env.DEEPSEEK);
+}
+if (process.env.DEEPSEEK_API_KEY) {
+  process.env.DEEPSEEK_API_KEY = decodeKey(process.env.DEEPSEEK_API_KEY);
 }
 
 export function makeAdapter(handler) {
@@ -82,7 +88,7 @@ export function makeAdapter(handler) {
     // Set Netlify environment variables from EdgeOne environment variables
     if (env) {
       for (const [key, val] of Object.entries(env)) {
-        if (key === 'OPENAI_API_KEY' && val) {
+        if ((key === 'OPENAI_API_KEY' || key === 'DEEPSEEK' || key === 'DEEPSEEK_API_KEY') && val) {
           process.env[key] = decodeKey(val);
         } else {
           process.env[key] = val;
@@ -90,9 +96,15 @@ export function makeAdapter(handler) {
       }
     }
     
-    // Always ensure process.env.OPENAI_API_KEY is decoded
+    // Always ensure key variables are decoded
     if (process.env.OPENAI_API_KEY) {
       process.env.OPENAI_API_KEY = decodeKey(process.env.OPENAI_API_KEY);
+    }
+    if (process.env.DEEPSEEK) {
+      process.env.DEEPSEEK = decodeKey(process.env.DEEPSEEK);
+    }
+    if (process.env.DEEPSEEK_API_KEY) {
+      process.env.DEEPSEEK_API_KEY = decodeKey(process.env.DEEPSEEK_API_KEY);
     }
     
     // Standard response headers for all API requests
