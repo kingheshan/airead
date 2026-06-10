@@ -1781,7 +1781,7 @@
         body: JSON.stringify(data)
       });
       const result = await response.json().catch(() => ({}));
-      if(!response.ok){
+      if(!response.ok || result.error){
         throw new Error(result.error || result.message || 'AI 后端返回失败');
       }
       currentReport = result.report || '';

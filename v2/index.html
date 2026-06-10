@@ -1549,7 +1549,7 @@
       });
       
       const result = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      if (!res.ok || result.error) {
         throw new Error(result.error || '后端拆书接口异常');
       }
       

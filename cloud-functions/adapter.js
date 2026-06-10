@@ -40,6 +40,18 @@ export function makeAdapter(handler) {
   return async function onRequest(context) {
     const { request, env } = context;
     
+    // Return 204 synchronously for OPTIONS requests
+    if (request.method === 'OPTIONS') {
+      const responseHeaders = new Headers();
+      responseHeaders.set('Access-Control-Allow-Origin', '*');
+      responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type');
+      responseHeaders.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      return new Response(null, {
+        status: 204,
+        headers: responseHeaders
+      });
+    }
+
     // Parse request headers
     const headers = {};
     for (const [key, val] of request.headers.entries()) {
@@ -83,33 +95,58 @@ export function makeAdapter(handler) {
       process.env.OPENAI_API_KEY = decodeKey(process.env.OPENAI_API_KEY);
     }
     
-    try {
-      const response = await handler(event, {});
-      
-      // Convert Netlify response back to Web API Response
-      const responseHeaders = new Headers();
-      if (response.headers) {
-        for (const [key, val] of Object.entries(response.headers)) {
-          responseHeaders.set(key, val);
+    // Standard response headers for all API requests
+    const responseHeaders = new Headers();
+    responseHeaders.set('Content-Type', 'application/json; charset=utf-8');
+    responseHeaders.set('X-Accel-Buffering', 'no');
+    responseHeaders.set('Access-Control-Allow-Origin', '*');
+    responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type');
+    responseHeaders.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
+    // Return a stream immediately to keep connection alive and reset gateway timeouts
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Enqueue a newline to flush headers immediately
+        controller.enqueue(new TextEncoder().encode('\n'));
+        
+        // Start a heartbeat timer to write a space every 1 second to prevent idle gateway timeouts
+        const heartbeatInterval = setInterval(() => {
+          try {
+            controller.enqueue(new TextEncoder().encode(' '));
+          } catch (e) {
+            // Stream might be closed or errored, clear interval
+            clearInterval(heartbeatInterval);
+          }
+        }, 1000);
+        
+        try {
+          const response = await handler(event, {});
+          
+          // Clear heartbeat interval before enqueuing the main response
+          clearInterval(heartbeatInterval);
+          
+          if (response && response.body) {
+            controller.enqueue(new TextEncoder().encode(response.body));
+          } else {
+            controller.enqueue(new TextEncoder().encode('{}'));
+          }
+        } catch (error) {
+          clearInterval(heartbeatInterval);
+          console.error(`[EdgeOne Cloud Function] Error running handler:`, error);
+          controller.enqueue(new TextEncoder().encode(JSON.stringify({
+            error: error.message || 'Internal server error from adapter.',
+            stack: error.stack
+          })));
+        } finally {
+          clearInterval(heartbeatInterval);
+          controller.close();
         }
       }
-      
-      const isNullBodyStatus = [101, 204, 205, 304].includes(response.statusCode);
-      const body = isNullBodyStatus ? null : response.body;
-      
-      return new Response(body, {
-        status: response.statusCode || 200,
-        headers: responseHeaders
-      });
-    } catch (error) {
-      console.error(`[EdgeOne Cloud Function] Error running handler:`, error);
-      return new Response(JSON.stringify({
-        error: error.message || 'Internal server error from adapter.',
-        stack: error.stack
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
+    });
+
+    return new Response(stream, {
+      status: 200,
+      headers: responseHeaders
+    });
   };
 }
