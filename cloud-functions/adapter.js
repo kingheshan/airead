@@ -37,13 +37,27 @@ export function makeAdapter(handler) {
           if (val.includes('__DOUBLE_DASH__')) {
             decodedVal = val.replace(/__DOUBLE_DASH__/g, '--');
           } else if (!val.startsWith('sk-')) {
-            try {
-              const decoded = Buffer.from(val, 'base64').toString('utf8');
-              if (decoded.startsWith('sk-')) {
-                decodedVal = decoded;
-              }
-            } catch (e) {
-              // Ignore decoding error, fallback to original
+            let decoded = null;
+            // 1. Try Hex decoding (Hex consists only of 0-9, a-f, A-F)
+            if (/^[0-9a-fA-F]+$/.test(val)) {
+              try {
+                const hexDecoded = Buffer.from(val, 'hex').toString('utf8');
+                if (hexDecoded.startsWith('sk-')) {
+                  decoded = hexDecoded;
+                }
+              } catch (e) {}
+            }
+            // 2. Try Base64 decoding (Base64 can have padding '=' or not)
+            if (!decoded) {
+              try {
+                const base64Decoded = Buffer.from(val, 'base64').toString('utf8');
+                if (base64Decoded.startsWith('sk-')) {
+                  decoded = base64Decoded;
+                }
+              } catch (e) {}
+            }
+            if (decoded) {
+              decodedVal = decoded;
             }
           }
         }
