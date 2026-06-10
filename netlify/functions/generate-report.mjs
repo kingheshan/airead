@@ -1,6 +1,12 @@
 import OpenAI from 'openai';
 
-const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o';
+  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
+    return 'gpt-4o';
+  }
+  return model;
+};
 const getMaxMaterialChars = () => Number(process.env.MAX_MATERIAL_CHARS || 60000);
 const getMaxOutputTokens = () => Number(process.env.MAX_OUTPUT_TOKENS || 16384);
 
@@ -42,14 +48,15 @@ export async function handler(event) {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const instructions = buildSystemInstructions();
   const userPrompt = buildUserPrompt(input, chunks);
-
   try {
+    const model = getModel();
+    const isReasoning = model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3');
     const response = await client.responses.create({
-      model: getModel(),
+      model,
       instructions,
       input: userPrompt,
       max_output_tokens: getMaxOutputTokens(),
-      ...(process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
+      ...(isReasoning && process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
     });
 
     return json(200, {

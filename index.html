@@ -1787,7 +1787,7 @@
       currentReport = result.report || '';
       currentChunks = result.chunks || [];
       renderCurrentView();
-      setStatus(`生成完成：${result.model || 'AI 模型'} · ${new Date().toLocaleString()}`, false, 'ok');
+      setStatus(`生成完成 · ${new Date().toLocaleString()}`, false, 'ok');
       showToast('AI 拆书报告已生成');
       
       // Auto switch tabs to 'rendered' preview
@@ -2142,7 +2142,7 @@ ${mat}`;
       
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(result.error || result.message || 'ChatGPT Image 2 接口返回失败');
+        throw new Error(result.error || result.message || 'AI 概念图生成接口返回失败');
       }
       
       const imgUrl = result.imageUrl;
@@ -2150,7 +2150,7 @@ ${mat}`;
         throw new Error('未获取到生成的图片 URL');
       }
       
-      logStep(`概念信息图渲染完成 (${result.model || 'gpt-image-2'}). 正在加载图片...`);
+      logStep('概念信息图渲染完成. 正在加载图片...');
       
       // Preload image
       const img = els.infographicImage;

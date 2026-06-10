@@ -1,6 +1,12 @@
 import OpenAI from 'openai';
 
-const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o';
+  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
+    return 'gpt-4o';
+  }
+  return model;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,13 +64,15 @@ export async function handler(event) {
 4. 输出格式使用简洁的 Markdown。`;
 
   try {
-    console.log(`[V2] Calling double-debate with model ${getModel()}...`);
+    const model = getModel();
+    const isReasoning = model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3');
+    console.log(`[V2] Calling double-debate with model ${model}...`);
     const response = await client.responses.create({
-      model: getModel(),
+      model: model,
       instructions: systemInstructions,
       input: `请开始辩论：“${query}”`,
       max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
-      ...(process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
+      ...(isReasoning && process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
     });
 
     return json(200, {

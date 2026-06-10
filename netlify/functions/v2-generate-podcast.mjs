@@ -1,6 +1,12 @@
 import OpenAI from 'openai';
 
-const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o';
+  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
+    return 'gpt-4o';
+  }
+  return model;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

@@ -3,7 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import { promptText } from './prompt-text.mjs';
 
-const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o';
+  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
+    return 'gpt-4o';
+  }
+  return model;
+};
 const getMaxMaterialChars = () => Number(process.env.MAX_MATERIAL_CHARS || 60000);
 const getMaxOutputTokens = () => Number(process.env.MAX_OUTPUT_TOKENS || 16384);
 

@@ -1,6 +1,12 @@
 import OpenAI from 'openai';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => {
+  const model = process.env.OPENAI_MODEL || 'gpt-4o';
+  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
+    return 'gpt-4o';
+  }
+  return model;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,13 +79,15 @@ export async function handler(event) {
 }`;
 
   try {
-    console.log(`[V2] Calling strategy-simulator with model ${MODEL}...`);
+    const model = getModel();
+    const isReasoning = model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3');
+    console.log(`[V2] Calling strategy-simulator with model ${model}...`);
     const response = await client.responses.create({
-      model: MODEL,
+      model: model,
       instructions: systemInstructions,
       input: `请开始推演战略动作：${scenario}`,
       max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
-      ...(process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
+      ...(isReasoning && process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
     });
 
     let jsonStr = response.output_text || '{}';
@@ -104,7 +112,7 @@ export async function handler(event) {
     return json(200, {
       ...parsedData,
       rawOutput: response.output_text,
-      model: MODEL
+      model: getModel()
     });
   } catch (error) {
     console.error('[V2] strategy-simulator error:', error);
