@@ -829,6 +829,18 @@
       .fs-sidebar {
         display: none;
       }
+      .view-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .chat-lobby {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .lobby-sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+      }
     }
   </style>
 </head>
@@ -931,9 +943,9 @@
         <div class="panel-view active" id="view-report">
           <div class="view-grid">
             <div style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; padding-right:10px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
                 <span style="font-size:13px; color:var(--text-muted);">决策分析报告：</span>
-                <div style="display:flex; gap:10px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
                   <button class="btn info" id="podcastBriefingBtn" style="font-size:12px; padding:6px 14px; background:rgba(0, 242, 254, 0.15); color:#00f2fe; border:1px solid rgba(0, 242, 254, 0.3);" disabled>🎧 商业简报电台</button>
                   <button class="btn purple" id="distillSkillBtn" style="font-size:12px; padding:6px 14px;" disabled>🛠️ 蒸馏为 AI 技能</button>
                   <button class="btn primary" id="saveReportToLibraryBtn" style="font-size:12px; padding:6px 14px;" disabled>💾 保存到决策库</button>
