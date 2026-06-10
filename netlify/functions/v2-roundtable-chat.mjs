@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,9 +69,9 @@ ${additionalSkillsInstructions}
   const latestUserMessage = messages[messages.length - 1]?.content || '你好';
 
   try {
-    console.log(`[V2] Calling roundtable-chat with model ${MODEL}...`);
+    console.log(`[V2] Calling roundtable-chat with model ${getModel()}...`);
     const response = await client.responses.create({
-      model: MODEL,
+      model: getModel(),
       instructions: systemInstructions,
       input: `这是群聊对话历史：\n${formattedHistory}\n\n请对此进行回复。`,
       max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
@@ -80,7 +80,7 @@ ${additionalSkillsInstructions}
 
     return json(200, {
       message: response.output_text || '',
-      model: MODEL
+      model: getModel()
     });
   } catch (error) {
     console.error('[V2] roundtable-chat error:', error);

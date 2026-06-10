@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,9 +58,9 @@ export async function handler(event) {
 4. 输出格式使用简洁的 Markdown。`;
 
   try {
-    console.log(`[V2] Calling double-debate with model ${MODEL}...`);
+    console.log(`[V2] Calling double-debate with model ${getModel()}...`);
     const response = await client.responses.create({
-      model: MODEL,
+      model: getModel(),
       instructions: systemInstructions,
       input: `请开始辩论：“${query}”`,
       max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
@@ -69,7 +69,7 @@ export async function handler(event) {
 
     return json(200, {
       debate: response.output_text || '',
-      model: MODEL
+      model: getModel()
     });
   } catch (error) {
     console.error('[V2] double-debate error:', error);

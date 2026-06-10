@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -72,9 +72,9 @@ description: [简短描述该书籍的方法论核心，说明它如何指导用
 请直接输出符合上述结构的 Markdown 格式技能卡，不要包含任何前后解释文字或 \`\`\` 包装。`;
 
   try {
-    console.log(`[V2] Calling distill-skill for ${title} with model ${MODEL}...`);
+    console.log(`[V2] Calling distill-skill for ${title} with model ${getModel()}...`);
     const response = await client.responses.create({
-      model: MODEL,
+      model: getModel(),
       instructions: systemInstructions,
       input: `书名：《${title}》\n作者：${author || '未知作者'}\n\n以下是该书籍的详细拆解报告数据，请基于此进行提炼与蒸馏：\n\n${reportText}`,
       max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
@@ -83,7 +83,7 @@ description: [简短描述该书籍的方法论核心，说明它如何指导用
 
     return json(200, {
       skillMarkdown: response.output_text || '',
-      model: MODEL
+      model: getModel()
     });
   } catch (error) {
     console.error('[V2] distill-skill error:', error);

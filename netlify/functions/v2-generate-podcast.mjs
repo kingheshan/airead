@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
+const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -53,9 +53,9 @@ ${report.slice(0, 4000)}
 
 请为用户的目标定制录制文稿：`;
 
-    console.log(`[V2] Generating podcast briefing script using model ${MODEL}...`);
+    console.log(`[V2] Generating podcast briefing script using model ${getModel()}...`);
     const completion = await client.chat.completions.create({
-      model: MODEL,
+      model: getModel(),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }

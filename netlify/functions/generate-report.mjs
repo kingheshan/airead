@@ -1,8 +1,8 @@
 import OpenAI from 'openai';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
-const MAX_MATERIAL_CHARS = Number(process.env.MAX_MATERIAL_CHARS || 60000);
-const MAX_OUTPUT_TOKENS = Number(process.env.MAX_OUTPUT_TOKENS || 16384);
+const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
+const getMaxMaterialChars = () => Number(process.env.MAX_MATERIAL_CHARS || 60000);
+const getMaxOutputTokens = () => Number(process.env.MAX_OUTPUT_TOKENS || 16384);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,16 +45,16 @@ export async function handler(event) {
 
   try {
     const response = await client.responses.create({
-      model: MODEL,
+      model: getModel(),
       instructions,
       input: userPrompt,
-      max_output_tokens: MAX_OUTPUT_TOKENS,
+      max_output_tokens: getMaxOutputTokens(),
       ...(process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
     });
 
     return json(200, {
       report: response.output_text || '',
-      model: MODEL,
+      model: getModel(),
       truncated: input.truncated,
       generatedAt: new Date().toISOString(),
       chunks: chunks
@@ -67,7 +67,7 @@ export async function handler(event) {
 
 function normalizeInput(body) {
   const rawMaterials = String(body.materials || '').trim();
-  const truncated = rawMaterials.length > MAX_MATERIAL_CHARS;
+  const truncated = rawMaterials.length > getMaxMaterialChars();
   return {
     title: clean(body.title, 120),
     author: clean(body.author, 120),
@@ -77,7 +77,7 @@ function normalizeInput(body) {
     depthLabel: clean(body.depthLabel, 80),
     goal: clean(body.goal, 1000),
     background: clean(body.background, 1500),
-    materials: rawMaterials.slice(0, MAX_MATERIAL_CHARS),
+    materials: rawMaterials.slice(0, getMaxMaterialChars()),
     truncated
   };
 }
@@ -143,7 +143,7 @@ ${input.goal}
 ${input.background || 'K12 AI 编程教育创业负责人，关注产品创新、市场破局、组织效率、AI 落地、商业模式和长期战略。'}
 
 【可用材料】
-${input.truncated ? `注意：材料过长，系统已截断到前 ${MAX_MATERIAL_CHARS} 字。\n` : ''}${formattedMaterials}
+${input.truncated ? `注意：材料过长，系统已截断到前 ${getMaxMaterialChars()} 字。\n` : ''}${formattedMaterials}
 
 【输出结构】
 请严格按照以下结构输出：

@@ -1,3 +1,41 @@
+function decodeKey(val) {
+  if (!val) return val;
+  const trimmedVal = val.trim();
+  let decodedVal = trimmedVal;
+  if (trimmedVal.includes('__DOUBLE_DASH__')) {
+    decodedVal = trimmedVal.replace(/__DOUBLE_DASH__/g, '--');
+  } else if (!trimmedVal.startsWith('sk-')) {
+    let decoded = null;
+    // 1. Try Hex decoding (Hex consists only of 0-9, a-f, A-F)
+    if (/^[0-9a-fA-F]+$/.test(trimmedVal)) {
+      try {
+        const hexDecoded = Buffer.from(trimmedVal, 'hex').toString('utf8');
+        if (hexDecoded.startsWith('sk-')) {
+          decoded = hexDecoded;
+        }
+      } catch (e) {}
+    }
+    // 2. Try Base64 decoding (Base64 can have padding '=' or not)
+    if (!decoded) {
+      try {
+        const base64Decoded = Buffer.from(trimmedVal, 'base64').toString('utf8');
+        if (base64Decoded.startsWith('sk-')) {
+          decoded = base64Decoded;
+        }
+      } catch (e) {}
+    }
+    if (decoded) {
+      decodedVal = decoded;
+    }
+  }
+  return decodedVal.trim();
+}
+
+// Decode OPENAI_API_KEY on startup if present in process.env
+if (process.env.OPENAI_API_KEY) {
+  process.env.OPENAI_API_KEY = decodeKey(process.env.OPENAI_API_KEY);
+}
+
 export function makeAdapter(handler) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -33,39 +71,16 @@ export function makeAdapter(handler) {
     if (env) {
       for (const [key, val] of Object.entries(env)) {
         if (key === 'OPENAI_API_KEY' && val) {
-          const trimmedVal = val.trim();
-          let decodedVal = trimmedVal;
-          if (trimmedVal.includes('__DOUBLE_DASH__')) {
-            decodedVal = trimmedVal.replace(/__DOUBLE_DASH__/g, '--');
-          } else if (!trimmedVal.startsWith('sk-')) {
-            let decoded = null;
-            // 1. Try Hex decoding (Hex consists only of 0-9, a-f, A-F)
-            if (/^[0-9a-fA-F]+$/.test(trimmedVal)) {
-              try {
-                const hexDecoded = Buffer.from(trimmedVal, 'hex').toString('utf8');
-                if (hexDecoded.startsWith('sk-')) {
-                  decoded = hexDecoded;
-                }
-              } catch (e) {}
-            }
-            // 2. Try Base64 decoding (Base64 can have padding '=' or not)
-            if (!decoded) {
-              try {
-                const base64Decoded = Buffer.from(trimmedVal, 'base64').toString('utf8');
-                if (base64Decoded.startsWith('sk-')) {
-                  decoded = base64Decoded;
-                }
-              } catch (e) {}
-            }
-            if (decoded) {
-              decodedVal = decoded;
-            }
-          }
-          process.env[key] = decodedVal.trim();
+          process.env[key] = decodeKey(val);
         } else {
           process.env[key] = val;
         }
       }
+    }
+    
+    // Always ensure process.env.OPENAI_API_KEY is decoded
+    if (process.env.OPENAI_API_KEY) {
+      process.env.OPENAI_API_KEY = decodeKey(process.env.OPENAI_API_KEY);
     }
     
     try {

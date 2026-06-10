@@ -3,9 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { promptText } from './prompt-text.mjs';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.5';
-const MAX_MATERIAL_CHARS = Number(process.env.MAX_MATERIAL_CHARS || 60000);
-const MAX_OUTPUT_TOKENS = Number(process.env.MAX_OUTPUT_TOKENS || 16384);
+const getModel = () => process.env.OPENAI_MODEL || 'gpt-5.5';
+const getMaxMaterialChars = () => Number(process.env.MAX_MATERIAL_CHARS || 60000);
+const getMaxOutputTokens = () => Number(process.env.MAX_OUTPUT_TOKENS || 16384);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,24 +59,78 @@ export async function handler(event) {
 
   const userPrompt = buildUserPrompt(input, chunks);
 
+  let response;
+  let usedModel = getModel();
+  
   try {
-    console.log(`[V2] Requesting report generation with model ${MODEL}...`);
-    const response = await client.responses.create({
-      model: MODEL,
-      instructions,
-      input: userPrompt,
-      max_output_tokens: MAX_OUTPUT_TOKENS,
-      ...(process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
-    });
+    console.log(`[V2] Requesting report generation with model ${usedModel}...`);
+    const isReasoningModel = usedModel.includes('5.5') || usedModel.startsWith('o1') || usedModel.startsWith('o3');
+    
+    if (isReasoningModel) {
+      // Set timeout to 25 seconds for reasoning models to avoid CDN timeout limit (typically 15s-30s)
+      try {
+        response = await client.responses.create({
+          model: usedModel,
+          instructions,
+          input: userPrompt,
+          max_output_tokens: getMaxOutputTokens(),
+          ...(process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
+        }, { timeout: 25000 });
+      } catch (err) {
+        // Fallback to gpt-4o if it timed out or hit another API connection issue
+        const isTimeout = err.name === 'APIConnectionTimeoutError' || err.message?.includes('timeout') || err.message?.includes('Timeout') || err.message?.includes('aborted');
+        if (isTimeout) {
+          console.warn(`[V2] Model ${usedModel} timed out. Falling back to gpt-4o...`);
+          usedModel = 'gpt-4o';
+          response = await client.responses.create({
+            model: usedModel,
+            instructions,
+            input: userPrompt,
+            max_output_tokens: getMaxOutputTokens()
+          });
+        } else {
+          throw err;
+        }
+      }
+    } else {
+      response = await client.responses.create({
+        model: usedModel,
+        instructions,
+        input: userPrompt,
+        max_output_tokens: getMaxOutputTokens()
+      });
+    }
 
     return json(200, {
       report: response.output_text || '',
-      model: MODEL,
+      model: usedModel,
       truncated: input.truncated,
       generatedAt: new Date().toISOString(),
       chunks: chunks
     });
   } catch (error) {
+    // If the configured model failed for any reason, try gpt-4o as a final fallback
+    if (usedModel !== 'gpt-4o') {
+      try {
+        console.warn(`[V2] Request with ${usedModel} failed (${error.message}). Final fallback to gpt-4o...`);
+        usedModel = 'gpt-4o';
+        const fallbackResponse = await client.responses.create({
+          model: usedModel,
+          instructions,
+          input: userPrompt,
+          max_output_tokens: getMaxOutputTokens()
+        });
+        return json(200, {
+          report: fallbackResponse.output_text || '',
+          model: usedModel,
+          truncated: input.truncated,
+          generatedAt: new Date().toISOString(),
+          chunks: chunks
+        });
+      } catch (fallbackError) {
+        console.error('[V2] Both primary and fallback models failed:', fallbackError);
+      }
+    }
     console.error('[V2] generate-report error:', error);
     const message = error?.message || 'OpenAI API request failed.';
     return json(502, { error: message });
@@ -108,7 +162,7 @@ function loadSystemPrompt() {
 
 function normalizeInput(body) {
   const rawMaterials = String(body.materials || '').trim();
-  const truncated = rawMaterials.length > MAX_MATERIAL_CHARS;
+  const truncated = rawMaterials.length > getMaxMaterialChars();
   return {
     title: clean(body.title, 120),
     author: clean(body.author, 120),
@@ -118,7 +172,7 @@ function normalizeInput(body) {
     depthLabel: clean(body.depthLabel, 80),
     goal: clean(body.goal, 1000),
     background: clean(body.background, 1500),
-    materials: rawMaterials.slice(0, MAX_MATERIAL_CHARS),
+    materials: rawMaterials.slice(0, getMaxMaterialChars()),
     truncated
   };
 }
@@ -153,7 +207,7 @@ function buildUserPrompt(input, chunks = []) {
 我当前阶段：产品探索与市场验证期
 
 可用材料：
-${input.truncated ? `注意：材料过长，系统已截断到前 ${MAX_MATERIAL_CHARS} 字。\n` : ''}${formattedMaterials}
+${input.truncated ? `注意：材料过长，系统已截断到前 ${getMaxMaterialChars()} 字。\n` : ''}${formattedMaterials}
 
 请选择使用“CEO 作战模式”（深度拆解模式），开始生成包含 25 个部分的完整认知操作系统，并在报告最后输出符合规范的 JSON 沉淀块。
 
