@@ -69,7 +69,7 @@ export async function handler(event) {
     }
 
     if (!imageUrl) {
-      throw new Error('No image URL or base64 data returned from ChatGPT Image 2.');
+      throw new Error('No image URL or base64 data returned from AI Image Generator.');
     }
 
     return json(200, {
@@ -82,7 +82,7 @@ export async function handler(event) {
   } catch (error) {
     console.error('[V2] generate-infographic error:', error);
     return json(502, {
-      error: `ChatGPT Image 2 generation failed: ${error.message}`
+      error: `AI 概念图生成失败: ${error.message}`
     });
   }
 }

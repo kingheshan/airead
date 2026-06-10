@@ -1276,7 +1276,7 @@
               <div class="infographic-placeholder" id="infographicPlaceholder">
                 <span class="icon">🎨</span>
                 <h3>生成概念信息图</h3>
-                <p>基于本次拆书报告，使用 OpenAI ChatGPT Image 2 (gpt-image-2) 生成一张高清的视觉化模型图，支持下载分享给团队。</p>
+                <p>基于本次拆书报告，使用智能 AI 概念图引擎生成一张高清的视觉化模型图，支持下载分享给团队。</p>
                 <button class="btn primary" id="generateInfographicBtn" style="margin-top:8px;">生成信息图</button>
               </div>
               <div class="progress-log hidden" id="infographicProgressLog"></div>
@@ -2131,7 +2131,7 @@ ${mat}`;
     await delay(800);
     logStep(`已锁定分类: "${payload.categoryLabel}" ... 构建概念思维导图结构...`);
     await delay(600);
-    logStep('正在发起 OpenAI ChatGPT Image 2 信息图生成请求 ( square 1024x1024 )...');
+    logStep('正在发起 AI 概念图生成请求...');
     
     try {
       const response = await fetch('/.netlify/functions/generate-infographic', {

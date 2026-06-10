@@ -42,7 +42,7 @@ Reading Goal: ${goal || 'General study'}.
 The design must be an ultra-modern flat vector illustration of knowledge structures, a tech dashboard, dark theme with vibrant neon cyan, blue, and light green accent lines. Show structural flowcharts, gears, and abstract conceptual nodes representing business models, strategic thinking, and cognitive mapping. The image should look like a clean high-end presentation slide or educational infographic. Minimal text, no messy gibberish words, focused on premium visual design and clean structured layout. 4k resolution, clean composition.`;
 
   try {
-    // Generate image using ChatGPT Image 2 (gpt-image-2)
+    // Generate image using AI Image Generator (gpt-image-2)
     console.log("Calling client.images.generate with model: gpt-image-2");
     const response = await client.images.generate({
       model: 'gpt-image-2',
@@ -60,7 +60,7 @@ The design must be an ultra-modern flat vector illustration of knowledge structu
     }
 
     if (!imageUrl) {
-      throw new Error('No image URL or base64 data returned from ChatGPT Image 2.');
+      throw new Error('No image URL or base64 data returned from AI Image Generator.');
     }
 
     return json(200, {
@@ -71,7 +71,7 @@ The design must be an ultra-modern flat vector illustration of knowledge structu
   } catch (error) {
     console.error("Error in generate-infographic:", error);
     return json(502, {
-      error: `ChatGPT Image 2 generation failed: ${error.message}`
+      error: `AI 概念图生成失败: ${error.message}`
     });
   }
 }
