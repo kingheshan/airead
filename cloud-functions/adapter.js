@@ -32,7 +32,22 @@ export function makeAdapter(handler) {
     // Set Netlify environment variables from EdgeOne environment variables
     if (env) {
       for (const [key, val] of Object.entries(env)) {
-        process.env[key] = val;
+        let decodedVal = val;
+        if (key === 'OPENAI_API_KEY' && val) {
+          if (val.includes('__DOUBLE_DASH__')) {
+            decodedVal = val.replace(/__DOUBLE_DASH__/g, '--');
+          } else if (!val.startsWith('sk-')) {
+            try {
+              const decoded = Buffer.from(val, 'base64').toString('utf8');
+              if (decoded.startsWith('sk-')) {
+                decodedVal = decoded;
+              }
+            } catch (e) {
+              // Ignore decoding error, fallback to original
+            }
+          }
+        }
+        process.env[key] = decodedVal;
       }
     }
     
