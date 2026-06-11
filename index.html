@@ -849,16 +849,73 @@
     }
 
     @media (max-width: 768px) {
+      /* Unlock the desktop fixed-height shell so the page scrolls naturally */
+      #app-container {
+        height: auto;
+        min-height: 100vh;
+      }
       #app-body {
-        grid-template-columns: 1fr;
-        overflow-y: auto;
+        display: block;
+        overflow: visible;
       }
       #sidebar-panel {
         border-right: none;
         border-bottom: 1px solid var(--glass-border);
         overflow-y: visible;
         height: auto;
+        padding: 16px;
       }
+      #main-panel {
+        overflow: visible;
+        min-height: 60vh;
+      }
+      .tab-content {
+        overflow-y: visible;
+      }
+      .panel-view {
+        padding: 16px;
+        height: auto;
+      }
+      header {
+        padding: 10px 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .logo-text h1 {
+        font-size: 17px;
+      }
+    }
+
+    /* Flashcard back: long business-alignment text scrolls instead of clipping */
+    .card-face.back {
+      overflow-y: auto;
+    }
+
+    /* Pulsing badge on tabs that have a generation running */
+    .tab-item {
+      position: relative;
+    }
+    .tab-item.busy::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 2px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan-neon);
+      box-shadow: 0 0 8px var(--cyan-neon);
+      animation: logoPulse 1.2s infinite ease-in-out;
+    }
+
+    /* Staggered reveal for debate bubbles */
+    .debate-bubble.reveal {
+      opacity: 0;
+      animation: bubbleIn 0.6s ease forwards;
+    }
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -875,7 +932,6 @@
       </div>
     </div>
     <div class="nav-actions">
-      <button class="btn" id="switchToV1Btn" onclick="location.href='/index.html'">🔙 返回 V1.0</button>
       <button class="btn" id="openFullscreenBtn">📖 全屏沉淀阅读</button>
     </div>
   </header>
@@ -898,7 +954,7 @@
       <div class="panel-card" id="card-general-input">
         <div class="card-title">📖 书籍基本信息</div>
         <div class="form-group">
-          <label>书籍名称</label>
+          <label>书籍名称 <span style="color:#ff6b6b;">*</span></label>
           <input type="text" class="form-control" id="input-title" placeholder="如《从0到1》">
         </div>
         <div class="form-group">
@@ -914,11 +970,12 @@
           <textarea class="form-control" id="input-background" placeholder="如：小鹿AI编程业务负责人，关注中低价课程转化与商业化破局。"></textarea>
         </div>
         <div class="form-group">
-          <label>导入或贴入书摘/目录/划线（不少于80字）</label>
+          <label>导入或贴入书摘/目录/划线（不少于80字）<span style="color:#ff6b6b;">*</span></label>
           <textarea class="form-control" id="input-materials" placeholder="支持拖拽本地 .txt 或 .md 文件到本输入框..."></textarea>
         </div>
         
         <button class="btn primary" id="generateReportBtn" style="width:100%; justify-content:center; margin-top:8px;">🚀 发起深度拆解</button>
+        <button class="btn" id="fillDemoBtn" style="width:100%; justify-content:center; margin-top:10px; font-size:12.5px;">🎯 一键填充示例书（精益创业），立即体验</button>
       </div>
 
       <!-- WeRead Integration Placeholder -->
@@ -966,6 +1023,7 @@
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                   <button class="btn info" id="podcastBriefingBtn" style="font-size:12px; padding:6px 14px; background:rgba(0, 242, 254, 0.15); color:#00f2fe; border:1px solid rgba(0, 242, 254, 0.3);" disabled>🎧 商业简报电台</button>
                   <button class="btn purple" id="distillSkillBtn" style="font-size:12px; padding:6px 14px;" disabled>🛠️ 蒸馏为 AI 技能</button>
+                  <button class="btn info" id="copyReportBtn" style="font-size:12px; padding:6px 14px; background:rgba(0, 255, 135, 0.15); color:#00ff87; border:1px solid rgba(0, 255, 135, 0.3);" disabled>📋 复制富文本排版</button>
                   <button class="btn primary" id="saveReportToLibraryBtn" style="font-size:12px; padding:6px 14px;" disabled>💾 保存到决策库</button>
                 </div>
               </div>
@@ -1129,7 +1187,7 @@
             <button class="btn purple" id="zipDownloadInfographicsBtn" disabled>📦 打包全部下载 (ZIP)</button>
           </div>
           
-          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px;">
             <!-- Card 1 -->
             <div class="panel-card" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:360px;">
               <span class="card-tag">DIMENSION 1</span>
@@ -1159,6 +1217,16 @@
               </div>
               <button class="btn" style="width:100%; justify-content:center;" onclick="triggerSingleInfographic('team_mindmap', 3)">生成团队协同图</button>
             </div>
+
+            <!-- Card 4 -->
+            <div class="panel-card" style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:360px;">
+              <span class="card-tag">DIMENSION 4</span>
+              <h3 style="font-size:14px; margin-top:8px;">📱 微信/小红书爆款信息图</h3>
+              <div id="info-img-box-4" style="width:100%; height:180px; background:rgba(0,0,0,0.4); border-radius:6px; margin:16px 0; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                <span style="color:var(--text-muted); font-size:12px;">未生成</span>
+              </div>
+              <button class="btn" style="width:100%; justify-content:center;" onclick="triggerSingleInfographic('social_media_card', 4)">生成社交分享图</button>
+            </div>
           </div>
           
           <hr style="border:none; border-top:1px dashed rgba(255,255,255,0.1); margin:32px 0;">
@@ -1175,8 +1243,9 @@
 
         <!-- View 8: Cloud Decision Library -->
         <div class="panel-view" id="view-library">
-          <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
             <span style="font-size:13.5px; color:var(--text-muted);">云端与本地战略成果决策库：同步读取您的拆书报告、思维导图模型及闪卡，快速载入工作区。</span>
+            <input type="text" id="library-search-input" placeholder="🔍 搜索书名 / 作者 / 目标..." style="flex:0 1 260px; min-width:200px; background:rgba(0,0,0,0.3); border:1px solid var(--glass-border); border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--text-main); outline:none;">
           </div>
           <div id="v2-library-list" style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; max-height:560px; padding-right:10px;">
             <div style="color:var(--text-muted); text-align:center; padding:100px 0;">
@@ -1267,7 +1336,7 @@
       <div style="width:70%; height:4px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); position:relative;">
         <div style="width:100%; height:100%; background:linear-gradient(90deg, var(--cyan-neon) 0%, var(--blue-neon) 100%); border-radius:2px; animation:loadingRun 1.5s infinite linear; box-shadow:0 0 8px var(--cyan-neon);"></div>
       </div>
-      <p style="font-size:12px; color:var(--text-muted); margin:0; text-align:center;">此过程预计消耗约 10 秒，请稍候...</p>
+      <p style="font-size:12px; color:var(--text-muted); margin:0; text-align:center;">正在撰写简报文稿并合成专业语音，预计 30-60 秒，请稍候...</p>
     </div>
 
     <!-- Main Player UI -->
@@ -1347,11 +1416,14 @@
      Client Side Logic & Controllers
      ========================================================================== -->
 <script>
-  // Intercept fetch to append preview credentials on EdgeOne
+  // Intercept fetch: support sub-path deployments (e.g. /airead/ behind nginx)
+  // and append preview credentials on EdgeOne
   (function() {
+    const basePath = window.location.pathname.startsWith('/airead') ? '/airead' : '';
     const originalFetch = window.fetch;
     window.fetch = function(input, init) {
       if (typeof input === 'string' && input.startsWith('/.netlify/functions/')) {
+        input = basePath + input;
         const separator = input.includes('?') ? '&' : '?';
         const search = window.location.search;
         if (search) {
@@ -1375,7 +1447,10 @@
     roundtableHistory: [],
     skillMarkdown: '',
     currentRecordId: null,
-    podcastCache: {}
+    podcastCache: {},
+    podcastInfo: null,
+    debateMarkdown: '',
+    simulatorResult: null
   };
 
   // DOM bindings
@@ -1400,7 +1475,6 @@
 
     reportRenderedBox: document.getElementById('report-rendered-box'),
     reportCitationList: document.getElementById('report-citation-list'),
-    switchToV1Btn: document.getElementById('switchToV1Btn'),
     openFullscreenBtn: document.getElementById('openFullscreenBtn'),
     fullscreenWorkspace: document.getElementById('fullscreen-workspace'),
     fsArticleContent: document.getElementById('fs-article-content'),
@@ -1434,6 +1508,7 @@
 
     // Supabase elements
     saveReportToLibraryBtn: document.getElementById('saveReportToLibraryBtn'),
+    copyReportBtn: document.getElementById('copyReportBtn'),
     v2LibraryList: document.getElementById('v2-library-list'),
     supabaseStatusDot: document.getElementById('supabase-status-dot'),
     supabaseStatusText: document.getElementById('supabase-status-text'),
@@ -1576,19 +1651,63 @@
     els.saveReportToLibraryBtn.disabled = true;
     els.distillSkillBtn.disabled = true;
     els.podcastBriefingBtn.disabled = true;
+    els.copyReportBtn.disabled = true;
     
     // Reset state for new book report to prevent state leakage
     state.currentRecordId = null;
     state.generatedImages = {};
     state.skillMarkdown = '';
+    state.roundtableHistory = [];
+    state.podcastInfo = null;
+    state.debateMarkdown = '';
+    state.simulatorResult = null;
     
     // Reset infographic UI preview boxes
-    ['info-img-box-1', 'info-img-box-2', 'info-img-box-3'].forEach(id => {
+    ['info-img-box-1', 'info-img-box-2', 'info-img-box-3', 'info-img-box-4'].forEach(id => {
       const box = document.getElementById(id);
       if (box) {
         box.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
       }
     });
+
+    // Reset sub-modules UI
+    if (document.getElementById('debate-query')) {
+      document.getElementById('debate-query').value = '';
+    }
+    if (els.debateMessagesBox) {
+      els.debateMessagesBox.innerHTML = `
+        <div style="color:var(--text-muted); text-align:center; margin-top:120px;">
+          💡 选择双方辩友和业务焦点，开启跨时代思想对抗，碰撞出非共识战略。
+        </div>
+      `;
+    }
+    if (document.getElementById('sandbox-scenario')) {
+      document.getElementById('sandbox-scenario').value = '';
+    }
+    updateDial(0);
+    const canvas = document.getElementById('sandboxCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    if (els.sandboxFailuresList) {
+      els.sandboxFailuresList.innerHTML = `
+        <span style="color:var(--text-muted);">暂无推演结果。运行推演以评估决策风险瓶颈。</span>
+      `;
+    }
+    if (els.roundtableChatMessages) {
+      els.roundtableChatMessages.innerHTML = `
+        <div style="color:var(--text-muted); text-align:center; padding:100px 0;">
+          🛋️ 勾选左侧作者组建顾问团，在下方提问开始交互式多作者会议...
+        </div>
+      `;
+    }
+    if (els.podcastTranscript) {
+      els.podcastTranscript.textContent = '简报内容生成中，将同步在此处显示文稿...';
+    }
+    if (els.podcastAudio) {
+      els.podcastAudio.src = '';
+    }
     
     try {
       const res = await fetch('/.netlify/functions/v2-generate-report', {
@@ -1622,8 +1741,12 @@
       els.saveReportToLibraryBtn.disabled = false;
       els.distillSkillBtn.disabled = false;
       els.podcastBriefingBtn.disabled = false;
+      els.copyReportBtn.disabled = false;
+
+      // Auto-save the new report to create the library record & set state.currentRecordId
+      await saveReportV2(true);
       
-      showToast('拆书完毕！已生成 V2.0 认知决策报告。');
+      showToast('拆书完毕！已生成 V2.0 认知决策报告，并已保存至本地决策库历史。');
       
       // Switch active tab view to rendered view
       document.querySelector('[data-view="view-report"]').click();
@@ -1756,10 +1879,10 @@
   function parseInlineMarkdown(text) {
     if (!text) return '';
     return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/__(.*?)__/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
+      .replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([\s\S]*?)__/g, '<strong>$1</strong>')
+      .replace(/\*([\s\S]*?)\*/g, '<em>$1</em>')
+      .replace(/_([\s\S]*?)_/g, '<em>$1</em>')
       .replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.9em; color: var(--cyan-neon);">$1</code>');
   }
 
@@ -1767,6 +1890,91 @@
   function renderMarkdownToHtml(md) {
     if (!md) return '';
     
+    function isMarkdownTable(block) {
+      const lines = block.split('\n');
+      if (lines.length < 2) return false;
+      return lines.some(line => {
+        const trimmed = line.trim();
+        return trimmed.length > 0 && /^[|:\-\s]+$/.test(trimmed) && trimmed.includes('-') && trimmed.includes('|');
+      });
+    }
+
+    function renderTableToHtml(block) {
+      const lines = block.split('\n');
+      let html = '<div style="overflow-x: auto; margin-bottom: 18px; border-radius: 8px; border: 1px solid var(--glass-border);"><table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #cbd5e1; background: rgba(255,255,255,0.02);">';
+      
+      let hasThead = false;
+      let rowsHtml = '';
+      
+      const separatorIdx = lines.findIndex(line => {
+        const trimmed = line.trim();
+        return trimmed.length > 0 && /^[|:\-\s]+$/.test(trimmed) && trimmed.includes('-') && trimmed.includes('|');
+      });
+      
+      const alignments = [];
+      if (separatorIdx !== -1) {
+        const sepLine = lines[separatorIdx];
+        const cells = sepLine.split('|').map(c => c.trim()).filter((c, i, arr) => {
+          if (i === 0 && c === '') return false;
+          if (i === arr.length - 1 && c === '') return false;
+          return true;
+        });
+        for (const cell of cells) {
+          const alignLeft = cell.startsWith(':');
+          const alignRight = cell.endsWith(':');
+          if (alignLeft && alignRight) alignments.push('center');
+          else if (alignRight) alignments.push('right');
+          else alignments.push('left');
+        }
+      }
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        if (i === separatorIdx) continue;
+        
+        let cells = line.split('|').map(c => c.trim());
+        if (line.startsWith('|')) {
+          cells.shift();
+        }
+        if (line.endsWith('|') && cells[cells.length - 1] === '') {
+          cells.pop();
+        }
+        
+        if (cells.length === 0 || (cells.length === 1 && cells[0] === '')) continue;
+        
+        const isHeader = (separatorIdx !== -1 && i < separatorIdx) || (separatorIdx === -1 && i === 0);
+        
+        let rowHtml = '<tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">';
+        for (let c = 0; c < cells.length; c++) {
+          const cellText = parseInlineMarkdown(cells[c]);
+          const align = alignments[c] || 'left';
+          const cellStyle = `padding: 10px 12px; text-align: ${align}; border-right: 1px solid rgba(255,255,255,0.05);`;
+          
+          if (isHeader) {
+            rowHtml += `<th style="${cellStyle} font-weight: bold; background: rgba(0, 242, 254, 0.1); color: #00f2fe; font-family: var(--font-display);">${cellText}</th>`;
+          } else {
+            rowHtml += `<td style="${cellStyle}">${cellText}</td>`;
+          }
+        }
+        rowHtml += '</tr>';
+        
+        if (isHeader) {
+          html += `<thead>${rowHtml}</thead><tbody>`;
+          hasThead = true;
+        } else {
+          rowsHtml += rowHtml;
+        }
+      }
+      
+      html += rowsHtml;
+      if (hasThead) {
+        html += '</tbody>';
+      }
+      html += '</table></div>';
+      return html;
+    }
+
     // Escape HTML first to prevent any script injections but preserve markdown structure safely
     md = escapeHtml(md);
     
@@ -1775,14 +1983,27 @@
       return `<span class="ref-badge" onclick="highlightCitation(${id})">Ref-${id}</span>`;
     });
 
+    // Headings must form their own block even when the model emits body text on
+    // the very next line (no blank line) — otherwise the whole paragraph lands in <h2>.
+    md = md.replace(/^(#{1,4} [^\n]*)\n(?!\n)/gm, '$1\n\n');
+
+    // Merge blank-line-separated ordered-list items into one block so numbering
+    // stays continuous instead of restarting at 1 for every item.
+    md = md.replace(/(\n\d+\.\s[^\n]+)\n\n(?=\d+\.\s)/g, '$1\n');
+
     const blocks = md.split(/\n\n+/);
     let inList = false;
+    let listType = 'ul';
     let listHtml = '';
     const htmlBlocks = [];
 
     function flushList() {
       if (inList) {
-        htmlBlocks.push(`<ul style="margin-left: 24px; margin-bottom: 18px; list-style-type: square; color: #cbd5e1;">${listHtml}</ul>`);
+        if (listType === 'ol') {
+          htmlBlocks.push(`<ol style="margin-left: 24px; margin-bottom: 18px; list-style-type: decimal; color: #cbd5e1;">${listHtml}</ol>`);
+        } else {
+          htmlBlocks.push(`<ul style="margin-left: 24px; margin-bottom: 18px; list-style-type: square; color: #cbd5e1;">${listHtml}</ul>`);
+        }
         listHtml = '';
         inList = false;
       }
@@ -1794,7 +2015,6 @@
 
       if (block.startsWith('```')) {
         flushList();
-        // Remove code block ticks
         const codeContent = block.replace(/^```[a-zA-Z0-9]*\n/, '').replace(/```$/, '').trim();
         htmlBlocks.push(`<pre style="background: rgba(0,0,0,0.45); padding: 16px; border-radius: 8px; border: 1px solid var(--glass-border); overflow-x: auto; font-family: monospace; font-size: 12.5px; color: #f8fafc; margin-bottom: 18px; line-height: 1.5;"><code>${codeContent}</code></pre>`);
       } else if (block.startsWith('# ')) {
@@ -1806,15 +2026,39 @@
       } else if (block.startsWith('### ')) {
         flushList();
         htmlBlocks.push(`<h3 style="font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--blue-neon); margin-top: 20px; margin-bottom: 8px;">${parseInlineMarkdown(block.slice(4))}</h3>`);
+      } else if (block.startsWith('#### ')) {
+        flushList();
+        htmlBlocks.push(`<h4 style="font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--blue-neon); margin-top: 16px; margin-bottom: 6px;">${parseInlineMarkdown(block.slice(5))}</h4>`);
+      } else if (block.startsWith('---') || block.startsWith('***')) {
+        flushList();
+        htmlBlocks.push(`<hr style="border: none; border-top: 1px solid var(--glass-border); margin: 20px 0;">`);
       } else if (block.startsWith('> ')) {
         flushList();
         htmlBlocks.push(`<blockquote style="border-left: 4px solid var(--purple-neon); background: rgba(177, 82, 255, 0.05); padding: 12px 18px; border-radius: 4px; font-style: italic; color: #cbd5e1; margin-bottom: 18px;">${parseInlineMarkdown(block.slice(2)).replace(/\n/g, '<br>')}</blockquote>`);
       } else if (block.startsWith('- ') || block.startsWith('* ')) {
+        flushList();
         inList = true;
-        const items = block.split(/\n[-*]\s+/);
+        listType = 'ul';
+        const items = block.split(/\n\s*[-*]\s+/);
         for (const it of items) {
-          const itemText = it.replace(/^[-*]\s+/, '');
-          listHtml += `<li style="margin-bottom: 6px;">${parseInlineMarkdown(itemText)}</li>`;
+          const itemText = it.replace(/^[-*]\s+/, '').trim();
+          if (itemText) {
+            listHtml += `<li style="margin-bottom: 6px;">${parseInlineMarkdown(itemText)}</li>`;
+          }
+        }
+      } else if (isMarkdownTable(block)) {
+        flushList();
+        htmlBlocks.push(renderTableToHtml(block));
+      } else if (/^\d+\.\s+/.test(block)) {
+        flushList();
+        inList = true;
+        listType = 'ol';
+        const items = block.split(/\n\s*\d+\.\s+/);
+        for (const it of items) {
+          const itemText = it.replace(/^\d+\.\s+/, '').trim();
+          if (itemText) {
+            listHtml += `<li style="margin-bottom: 6px;">${parseInlineMarkdown(itemText)}</li>`;
+          }
         }
       } else {
         flushList();
@@ -2010,7 +2254,9 @@
 
   // 7. 3D Flashcards Populator (On-Demand)
   async function loadFlashcardsOnDemand() {
-    if (state.parsedJSON) {
+    // Only short-circuit when actual card data exists — a parsedJSON holding just
+    // v2_modules (saved module states) must still trigger metadata extraction.
+    if (state.parsedJSON?.models?.length || state.parsedJSON?.assumptions?.length) {
       populateFlashcards();
       return;
     }
@@ -2029,6 +2275,7 @@
         <div style="font-size:13px; font-weight:700; color:var(--cyan-neon);">⏳ 正在为您从拆书报告中提取核心模型与闪卡数据...</div>
       </div>
     `;
+    setTabBusy('view-flashcards', true);
 
     try {
       const res = await fetch('/.netlify/functions/v2-generate-metadata', {
@@ -2045,7 +2292,12 @@
         throw new Error(result.error || '后端元数据提取异常');
       }
 
+      // Merge instead of overwrite so saved v2_modules states survive extraction
+      const savedModules = state.parsedJSON?.v2_modules;
       state.parsedJSON = result.parsedJSON || null;
+      if (state.parsedJSON && savedModules) {
+        state.parsedJSON.v2_modules = savedModules;
+      }
       populateFlashcards();
 
       // Auto-save the new parsed JSON back to Supabase or localStorage
@@ -2062,7 +2314,7 @@
           chunks: state.chunks,
           parsed_json: state.parsedJSON,
           skill_markdown: state.skillMarkdown || '',
-          images_json: state.generatedImages || {}
+          images_json: imagesJsonForStore()
         };
 
         if (supabaseClient) {
@@ -2081,10 +2333,11 @@
       showToast('成功提取 Anki 闪卡数据！');
     } catch (e) {
       console.error(e);
+      setTabBusy('view-flashcards', false);
       els.flashcardsContainer.innerHTML = `
         <div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:16px; align-items:center; justify-content:center; padding:40px 0; color:#ef4444; border:1px dashed rgba(239, 68, 68, 0.3); border-radius:10px; background:rgba(239,68,68,0.05);">
           <span>❌ 闪卡提取失败: ${e.message}</span>
-          <button class="btn" style="padding:6px 16px; font-size:12px; border-color:rgba(239,68,68,0.4);" onclick="loadFlashcardsOnDemand()">🔄 重新尝试提取</button>
+          <button class="btn" style="padding:6px 16px; font-size:12px; border-color:rgba(239,68,68,0.4);" onclick="setTabBusy('view-flashcards', false); loadFlashcardsOnDemand()">🔄 重新尝试提取</button>
         </div>
       `;
     }
@@ -2098,11 +2351,148 @@
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
     }
   }
+
+  async function autoSaveV2Modules() {
+    if (!state.currentRecordId) {
+      await saveReportV2(true);
+      return;
+    }
+    if (!state.parsedJSON) state.parsedJSON = {};
+    
+    state.parsedJSON.v2_modules = {
+      podcast: state.podcastInfo || null,
+      debate: state.debateMarkdown || '',
+      debate_inputs: {
+        author1: document.getElementById('debate-author-1')?.value || '',
+        author2: document.getElementById('debate-author-2')?.value || '',
+        query: document.getElementById('debate-query')?.value.trim() || ''
+      },
+      simulator: state.simulatorResult || null,
+      roundtable: state.roundtableHistory || []
+    };
+    
+    if (supabaseClient) {
+      try {
+        const isUuid = state.currentRecordId.length > 20;
+        if (isUuid) {
+          await supabaseClient
+            .from('xiaolu_reports')
+            .update({ parsed_json: state.parsedJSON })
+            .eq('id', state.currentRecordId);
+        } else {
+          updateLocalParsedJsonV2(state.currentRecordId, state.parsedJSON);
+        }
+      } catch (err) {
+        console.error('Supabase auto-save V2 modules failed, using localStorage:', err);
+        updateLocalParsedJsonV2(state.currentRecordId, state.parsedJSON);
+      }
+    } else {
+      updateLocalParsedJsonV2(state.currentRecordId, state.parsedJSON);
+    }
+  }
   window.loadFlashcardsOnDemand = loadFlashcardsOnDemand; // Make it globally accessible for the retry button click
 
+  // ===== IndexedDB image store: base64 infographics live here, not in
+  // localStorage (a single gpt-image card ~1.7MB would blow the ~5MB quota).
+  // Library records keep an 'idb' marker per cardType; legacy records may
+  // still carry inline 'data:' URIs and are read as-is. =====
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('xiaolu-airead', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('images');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbPutImage(key, dataUri) {
+    try {
+      const db = await idbOpen();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readwrite');
+        tx.objectStore('images').put(dataUri, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch (e) {
+      console.warn('idbPutImage failed:', e);
+      return false;
+    }
+  }
+
+  async function idbGetImage(key) {
+    try {
+      const db = await idbOpen();
+      return await new Promise((resolve) => {
+        const tx = db.transaction('images', 'readonly');
+        const rq = tx.objectStore('images').get(key);
+        rq.onsuccess = () => resolve(rq.result || null);
+        rq.onerror = () => resolve(null);
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function imageIdbKey(title, cardType) {
+    return `${title || '未定义书籍'}::${cardType}`;
+  }
+
+  // Marker map persisted into records instead of raw base64
+  function imagesJsonForStore() {
+    const out = {};
+    for (const k of Object.keys(state.generatedImages || {})) {
+      if (state.generatedImages[k]) out[k] = 'idb';
+    }
+    return out;
+  }
+
+  const CARD_BOX_MAP = { strategy_card: 1, execution_poster: 2, team_mindmap: 3, social_media_card: 4 };
+
+  function paintInfographicBoxes() {
+    for (const [cardType, boxId] of Object.entries(CARD_BOX_MAP)) {
+      const box = document.getElementById(`info-img-box-${boxId}`);
+      if (!box) continue;
+      const url = state.generatedImages[cardType];
+      box.innerHTML = (url && url.startsWith('data:'))
+        ? `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${url}', '${cardType}')" title="点击查看大图">`
+        : '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+    }
+  }
+
+  // Resolve a record's images (legacy inline base64 or idb markers) into session state
+  async function restoreImagesForRecord(record) {
+    const raw = record.images_json || record.imagesJson || {};
+    state.generatedImages = {};
+    for (const [cardType, val] of Object.entries(raw)) {
+      if (typeof val === 'string' && val.startsWith('data:')) {
+        state.generatedImages[cardType] = val;
+      } else if (val) {
+        const fromIdb = await idbGetImage(imageIdbKey(record.title, cardType));
+        if (fromIdb) state.generatedImages[cardType] = fromIdb;
+      }
+    }
+    paintInfographicBoxes();
+  }
+
+  // Pulsing dot on a tab while its content is generating in the background
+  function setTabBusy(viewName, busy) {
+    const tab = document.querySelector(`.tab-item[data-view="${viewName}"]`);
+    if (tab) tab.classList.toggle('busy', !!busy);
+  }
+
   function populateFlashcards() {
+    setTabBusy('view-flashcards', false);
     els.flashcardsContainer.innerHTML = '';
-    if (!state.parsedJSON) return;
+    const cardCount = (state.parsedJSON?.models?.length || 0) + (state.parsedJSON?.assumptions?.length || 0);
+    if (cardCount === 0) {
+      els.flashcardsContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; color:var(--text-muted); font-size:12.5px; text-align:center; padding:40px 0; border:1px dashed var(--glass-border); border-radius:10px; background:rgba(0,0,0,0.15);">
+          🎴 暂无闪卡数据。${state.reportMarkdown ? '<br><br><button class="btn" style="padding:6px 16px; font-size:12px;" onclick="loadFlashcardsOnDemand()">✨ 从报告提取闪卡</button>' : '请先在左侧发起深度拆解，生成拆书报告。'}
+        </div>
+      `;
+      return;
+    }
 
     // Build model cards
     if (state.parsedJSON.models) {
@@ -2192,7 +2582,9 @@
         currentStep++;
       }
     }, 1500);
-    
+
+    els.startDebateBtn.disabled = true;
+    setTabBusy('view-debate', true);
     try {
       const res = await fetch('/.netlify/functions/v2-double-debate', {
         method: 'POST',
@@ -2203,52 +2595,59 @@
       if (!res.ok) {
         throw new Error(result.error || '辩论算法生成失败');
       }
-      
+
       clearInterval(stepInterval);
-      renderDebateScript(result.debate);
+      state.debateMarkdown = result.debate || '';
+      renderDebateScript(state.debateMarkdown, true);
+      autoSaveV2Modules();
     } catch (e) {
       clearInterval(stepInterval);
       els.debateMessagesBox.innerHTML = `<div style="color:red; text-align:center; padding-top:120px;">🔴 辩论失败: ${e.message}</div>`;
+    } finally {
+      els.startDebateBtn.disabled = false;
+      setTabBusy('view-debate', false);
     }
   });
 
-  function renderDebateScript(md) {
+  function renderDebateScript(md, animate = false) {
     els.debateMessagesBox.innerHTML = '';
     // Parse simulated turns [Name] or **Name**:
     const turns = md.split(/\*\*轮次 \d+：/g);
-    
+
     let speakerCount = 0;
-    
+
     turns.forEach(turn => {
       const trimmed = turn.trim();
       if (!trimmed) return;
-      
+
       // Attempt to identify speaker name
       const speakerRegex = /^\[(.*?)\]\s*([\s\S]*)$/;
       const match = trimmed.match(speakerRegex);
-      
+
       let speaker = '首席战略官';
       let speech = trimmed;
       if (match) {
         speaker = match[1];
         speech = match[2];
       }
-      
+
       const isRight = speakerCount % 2 === 1;
+      const turnIndex = speakerCount;
       speakerCount++;
-      
+
       const bubble = document.createElement('div');
-      bubble.className = `debate-bubble ${isRight ? 'right' : 'left'}`;
+      bubble.className = `debate-bubble ${isRight ? 'right' : 'left'}${animate ? ' reveal' : ''}`;
+      if (animate) bubble.style.animationDelay = `${turnIndex * 0.9}s`;
       bubble.innerHTML = `
         <div class="debate-avatar">${isRight ? '💡' : '🎓'}</div>
         <div class="debate-content">
           <div class="debate-author-name">${speaker}</div>
-          <div>${speech.replace(/\n/g, '<br>')}</div>
+          <div>${renderMarkdownToHtml(speech)}</div>
         </div>
       `;
       els.debateMessagesBox.appendChild(bubble);
     });
-    
+
     els.debateMessagesBox.scrollTop = els.debateMessagesBox.scrollHeight;
   }
 
@@ -2267,6 +2666,7 @@
 
     els.runSimulationBtn.disabled = true;
     els.runSimulationBtn.textContent = '⏳ 正在进行蒙特卡洛战略数据建模...';
+    setTabBusy('view-sandbox', true);
 
     try {
       const res = await fetch('/.netlify/functions/v2-strategy-simulator', {
@@ -2294,6 +2694,7 @@
     } finally {
       els.runSimulationBtn.disabled = false;
       els.runSimulationBtn.textContent = '📊 启动蒙特卡洛战略沙盘推演';
+      setTabBusy('view-sandbox', false);
     }
   });
 
@@ -2312,8 +2713,13 @@
     
     if (timeline.length === 0) return;
     
+    // Canvas cannot resolve CSS variables — use literal palette colors
+    const CYAN = '#00f2fe';
+    const PURPLE = '#b152ff';
+    const MUTED = '#64748b';
+
     // Draw chart axes
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(40, 10);
@@ -2323,15 +2729,16 @@
 
     // Map month data points
     const maxVal = Math.max(...timeline.map(t => t.revenue || 1000));
+    const maxUsers = Math.max(...timeline.map(t => t.users || 100));
     const stepX = 500 / (timeline.length - 1);
-    
+
     // Draw Revenue Projections Line
-    ctx.strokeStyle = 'var(--cyan-neon)';
+    ctx.strokeStyle = CYAN;
     ctx.lineWidth = 3;
     ctx.shadowBlur = 10;
     ctx.shadowColor = 'rgba(0, 242, 254, 0.5)';
     ctx.beginPath();
-    
+
     timeline.forEach((pt, i) => {
       const x = 40 + i * stepX;
       const y = 160 - (pt.revenue / maxVal * 130);
@@ -2339,13 +2746,12 @@
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
-    
+
     // Reset shadow
     ctx.shadowBlur = 0;
 
     // Draw Users Line
-    const maxUsers = Math.max(...timeline.map(t => t.users || 100));
-    ctx.strokeStyle = 'var(--purple-neon)';
+    ctx.strokeStyle = PURPLE;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     timeline.forEach((pt, i) => {
@@ -2356,14 +2762,34 @@
     });
     ctx.stroke();
 
-    // Labels
-    ctx.fillStyle = 'var(--text-muted)';
+    // X-axis month labels
+    ctx.fillStyle = MUTED;
     ctx.font = '10px sans-serif';
     timeline.forEach((pt, i) => {
       if (i % 2 === 0) {
         ctx.fillText(pt.month, 40 + i * stepX - 8, 175);
       }
     });
+
+    // Y-axis scale hints (left: revenue, right: users)
+    const fmt = (n) => n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + 'w' : String(Math.round(n));
+    ctx.fillStyle = CYAN;
+    ctx.fillText(`¥${fmt(maxVal)}`, 2, 18);
+    ctx.fillText('¥0', 18, 160);
+    ctx.fillStyle = PURPLE;
+    ctx.textAlign = 'right';
+    ctx.fillText(`${fmt(maxUsers)}人`, 556, 18);
+    ctx.textAlign = 'left';
+
+    // Legend
+    ctx.fillStyle = CYAN;
+    ctx.fillRect(220, 6, 14, 3);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('营收预测', 238, 13);
+    ctx.fillStyle = PURPLE;
+    ctx.fillRect(310, 6, 14, 3);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('用户量', 328, 13);
   }
 
   function renderSimulationFailurePoints(failures) {
@@ -2402,6 +2828,8 @@
       showToast('请先在左侧选择至少一名圆桌作者。', 'warning');
       return;
     }
+    els.sendRoundtableMsgBtn.disabled = true;
+    setTabBusy('view-roundtable', true);
 
     // Extract selected skill contexts for virtual book spirits
     const selectedSkillContexts = {};
@@ -2476,11 +2904,15 @@
 
       appendChatMessage('assistant', '顾问团', result.message);
       state.roundtableHistory.push({ role: 'assistant', content: result.message });
+      autoSaveV2Modules();
     } catch (e) {
       clearInterval(stepInterval);
       const temp = document.getElementById('roundtable-loading-bubble');
       if (temp) temp.remove();
       appendChatMessage('system', '系统错误', e.message);
+    } finally {
+      els.sendRoundtableMsgBtn.disabled = false;
+      setTabBusy('view-roundtable', false);
     }
   });
 
@@ -2496,7 +2928,7 @@
       <div class="debate-avatar" style="${role === 'user' ? 'background:linear-gradient(135deg, var(--green-neon), var(--blue-neon));' : ''}">${role === 'user' ? '👤' : '🛋️'}</div>
       <div class="debate-content">
         <div class="debate-author-name">${sender}</div>
-        <div>${text.replace(/\n/g, '<br>')}</div>
+        <div>${role === 'user' ? escapeHtml(text).replace(/\n/g, '<br>') : renderMarkdownToHtml(text)}</div>
       </div>
     `;
     els.roundtableChatMessages.appendChild(bubble);
@@ -2506,6 +2938,21 @@
   // 11. Multi-Infographics generator and JSZip packing
   function saveLocalV2AndGetId(record) {
     const records = getLibraryLocalV2();
+    // Same book + author updates in place instead of stacking duplicate records
+    const dupIndex = records.findIndex(r => r.title === record.title && (r.author || '') === (record.author || ''));
+    if (dupIndex !== -1) {
+      state.currentRecordId = records[dupIndex].id;
+      records[dupIndex] = {
+        ...records[dupIndex],
+        ...record,
+        categoryLabel: getCategoryLabel(record.category),
+        depthLabel: getDepthLabel(record.depth)
+      };
+      localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      loadedLibraryRecordsV2 = records; // Sync in-memory array!
+      showToast('图生成成功，已更新本地决策库中该书籍的记录！');
+      return;
+    }
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     state.currentRecordId = id;
     const newRecord = {
@@ -2524,14 +2971,42 @@
   window.triggerSingleInfographic = async function(cardType, boxId) {
     const title = els.inputTitle.value.trim();
     const author = els.inputAuthor.value.trim();
-    
+
     if (!title) {
       showToast('请先输入书籍标题。', 'warning');
       return;
     }
 
+    // Guard against double-clicks while this card is already generating
+    if (!state.__imageGenBusy) state.__imageGenBusy = {};
+    if (state.__imageGenBusy[cardType]) {
+      showToast('该图正在生成中，请稍候...', 'warning');
+      return;
+    }
+    state.__imageGenBusy[cardType] = true;
+    setTabBusy('view-infographics', true);
+
     const imgContainer = document.getElementById(`info-img-box-${boxId}`);
-    imgContainer.innerHTML = `<span style="color:var(--text-muted); font-size:12px;">⏳ 正在生成...</span>`;
+    const genStages = [
+      '正在构思视觉布局与信息结构...',
+      '正在绘制矢量图形与配色...',
+      '正在精修细节与排版文字...',
+      '即将完成，正在导出高清图...'
+    ];
+    let stageIdx = 0;
+    const paintStage = () => {
+      imgContainer.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center; padding:20px 10px; text-align:center;">
+          <div class="loading-spinner" style="width:26px; height:26px; border:3px solid rgba(0,242,254,0.1); border-top-color:var(--cyan-neon); border-radius:50%; animation:spin 1s linear infinite;"></div>
+          <span style="color:var(--cyan-neon); font-size:12px; font-weight:700;">⏳ ${genStages[stageIdx]}</span>
+          <span style="color:var(--text-muted); font-size:11px;">AI 绘图约需 1-2 分钟，可先浏览其他模块</span>
+        </div>`;
+    };
+    paintStage();
+    const stageTimer = setInterval(() => {
+      stageIdx = Math.min(stageIdx + 1, genStages.length - 1);
+      paintStage();
+    }, 25000);
 
     try {
       const res = await fetch('/.netlify/functions/v2-generate-infographic', {
@@ -2550,9 +3025,16 @@
 
       const imgUrl = result.imageUrl;
       state.generatedImages[cardType] = imgUrl;
+      clearInterval(stageTimer);
+
+      // Persist heavyweight base64 into IndexedDB; records only keep an 'idb' marker
+      idbPutImage(imageIdbKey(title, cardType), imgUrl);
 
       imgContainer.innerHTML = `<img src="${imgUrl}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${imgUrl}', '${cardType}')" title="点击查看大图">`;
-      
+
+      // Auto-save must never destroy the already-rendered image: persistence
+      // failures (e.g. localStorage quota) degrade to a warning toast only.
+      try {
       // Auto-save the new image to library record (create skeleton if not saved yet, update otherwise)
       if (!state.currentRecordId) {
         const record = {
@@ -2567,7 +3049,7 @@
           chunks: state.chunks || [],
           parsed_json: state.parsedJSON || null,
           skill_markdown: state.skillMarkdown || '',
-          images_json: state.generatedImages || {}
+          images_json: imagesJsonForStore()
         };
         
         if (supabaseClient) {
@@ -2611,7 +3093,7 @@
         const record = loadedLibraryRecordsV2.find(r => r.id === state.currentRecordId);
         if (record) {
           if (!record.images_json) record.images_json = {};
-          record.images_json[cardType] = imgUrl;
+          record.images_json[cardType] = 'idb';
           record.imagesJson = record.images_json;
           
           if (supabaseClient) {
@@ -2630,13 +3112,27 @@
           showToast('已更新并自动同步逻辑图至决策库！');
         }
       }
-      
+      } catch (saveErr) {
+        console.warn('Infographic auto-save failed (non-fatal):', saveErr);
+        showToast(`图已生成，但保存到决策库失败：${saveErr.message || saveErr}`, 'warning');
+      }
+
       // Refresh gallery if visible
       if (state.activeTab === 'view-infographics') {
         renderGalleryV2();
       }
     } catch (e) {
-      imgContainer.innerHTML = `<span style="color:red; font-size:12px;">🔴 失败: ${e.message}</span>`;
+      imgContainer.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center; padding:16px 10px; text-align:center;">
+          <span style="color:#ef4444; font-size:12px;">🔴 生成失败: ${escapeHtml(e.message || '')}</span>
+          <button class="btn" style="padding:5px 14px; font-size:12px;" onclick="triggerSingleInfographic('${cardType}', ${boxId})">🔄 重试生成</button>
+        </div>`;
+    } finally {
+      clearInterval(stageTimer);
+      state.__imageGenBusy[cardType] = false;
+      if (!Object.values(state.__imageGenBusy).some(Boolean)) {
+        setTabBusy('view-infographics', false);
+      }
     }
   };
 
@@ -2650,17 +3146,28 @@
       return;
     }
 
-    showToast('正在打包多维度信息图，请稍候...');
-
-    keys.forEach(key => {
-      const dataUrl = state.generatedImages[key];
-      if (dataUrl && dataUrl.startsWith('data:image/png;base64,')) {
-        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
-        zip.file(`小鹿AI拆书-V2-${key}-${title}.png`, base64Data, { base64: true });
-      }
-    });
+    showToast('正在下载并打包多维度信息图，请稍候...');
+    els.zipDownloadInfographicsBtn.disabled = true;
 
     try {
+      for (const key of keys) {
+        const url = state.generatedImages[key];
+        if (!url) continue;
+
+        try {
+          if (url.startsWith('data:')) {
+            const base64Data = url.split(',')[1];
+            zip.file(`小鹿AI拆书-V2-${key}-${title}.png`, base64Data, { base64: true });
+          } else {
+            const resp = await fetch(url, { mode: 'cors' });
+            const blob = await resp.blob();
+            zip.file(`小鹿AI拆书-V2-${key}-${title}.png`, blob);
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch image for ZIP: ${url}`, err);
+        }
+      }
+
       const content = await zip.generateAsync({ type: 'blob' });
       const blobUrl = URL.createObjectURL(content);
       const a = document.createElement('a');
@@ -2673,6 +3180,8 @@
       showToast('📦 压缩包打包下载成功！');
     } catch (e) {
       showToast(`打包压缩失败: ${e.message}`, 'error');
+    } finally {
+      els.zipDownloadInfographicsBtn.disabled = false;
     }
   });
 
@@ -2887,15 +3396,33 @@
       return;
     }
 
-    els.v2LibraryList.innerHTML = loadedLibraryRecordsV2.map((record, index) => {
-      const meta = [record.author, record.categoryLabel, record.depthLabel, new Date(record.createdAt).toLocaleDateString()].filter(Boolean).join(' · ');
+    const keyword = (document.getElementById('library-search-input')?.value || '').trim().toLowerCase();
+    const visible = loadedLibraryRecordsV2
+      .map((record, index) => ({ record, index }))
+      .filter(({ record }) => {
+        if (!keyword) return true;
+        return [record.title, record.author, record.goal].some(f => (f || '').toLowerCase().includes(keyword));
+      });
+
+    if (visible.length === 0) {
+      els.v2LibraryList.innerHTML = `<div style="color:var(--text-muted); text-align:center; padding:60px 0;">🔍 没有匹配「${escapeHtml(keyword)}」的记录。</div>`;
+      return;
+    }
+
+    els.v2LibraryList.innerHTML = visible.map(({ record, index }) => {
+      const savedAt = record.createdAt
+        ? new Date(record.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : '';
+      const meta = [record.author, record.categoryLabel, savedAt].filter(Boolean).join(' · ');
+      const goalSnippet = (record.goal || '').slice(0, 32);
       return `
-        <div class="panel-card" style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; margin-bottom:12px; border-color:var(--glass-border); background:var(--glass-bg);">
-          <div>
+        <div class="panel-card" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:16px 20px; margin-bottom:12px; border-color:var(--glass-border); background:var(--glass-bg);">
+          <div style="min-width:0;">
             <h4 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:4px;">《${escapeHtml(record.title)}》</h4>
             <div style="font-size:12px; color:var(--text-muted);">${escapeHtml(meta)}</div>
+            ${goalSnippet ? `<div style="font-size:11.5px; color:var(--cyan-neon); opacity:0.75; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:480px;">🎯 ${escapeHtml(goalSnippet)}${record.goal.length > 32 ? '…' : ''}</div>` : ''}
           </div>
-          <div style="display:flex; gap:10px;">
+          <div style="display:flex; gap:10px; flex-shrink:0;">
             <button class="btn" style="padding:6px 12px; font-size:12px;" onclick="loadLibraryReportV2(${index})">📂 载入决策舱</button>
             <button class="btn delete danger" style="padding:6px 12px; font-size:12px;" onclick="deleteLibraryReportV2('${record.id}')">🗑️ 删除</button>
           </div>
@@ -2903,6 +3430,11 @@
       `;
     }).join('');
   }
+
+  // Live-filter the library list while typing
+  document.getElementById('library-search-input')?.addEventListener('input', () => {
+    if (state.activeTab === 'view-library') renderLibraryV2();
+  });
 
   window.loadLibraryReportV2 = function(index) {
     const record = loadedLibraryRecordsV2[index];
@@ -2927,36 +3459,108 @@
     state.skillMarkdown = record.skill_markdown || record.skillMarkdown || '';
     state.currentRecordId = record.id || null;
 
-    // Restore infographic states
-    state.generatedImages = record.images_json || record.imagesJson || {};
-    const imgBox1 = document.getElementById('info-img-box-1');
-    const imgBox2 = document.getElementById('info-img-box-2');
-    const imgBox3 = document.getElementById('info-img-box-3');
-    
-    if (imgBox1) {
-      const url = state.generatedImages['strategy_card'];
-      imgBox1.innerHTML = url 
-        ? `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${url}', 'strategy_card')" title="点击查看大图">`
-        : '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+    // Restore V2 Modules state from parsed_json.v2_modules
+    const v2Modules = record.parsed_json?.v2_modules || {};
+
+    // 1. Restore Podcast
+    state.podcastInfo = v2Modules.podcast || null;
+    if (state.podcastInfo) {
+      if (!state.podcastCache) state.podcastCache = {};
+      state.podcastCache[record.title] = state.podcastInfo;
+      
+      els.podcastTranscript.textContent = state.podcastInfo.script || '';
+      els.podcastAudio.src = state.podcastInfo.audioUrl || '';
+      els.podcastAudio.load();
+    } else {
+      els.podcastTranscript.textContent = '简报内容生成中，将同步在此处显示文稿...';
+      els.podcastAudio.src = '';
     }
-    if (imgBox2) {
-      const url = state.generatedImages['execution_poster'];
-      imgBox2.innerHTML = url 
-        ? `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${url}', 'execution_poster')" title="点击查看大图">`
-        : '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+
+    // 2. Restore Double Debate
+    state.debateMarkdown = v2Modules.debate || '';
+    if (state.debateMarkdown) {
+      if (document.getElementById('debate-author-1')) {
+        document.getElementById('debate-author-1').value = v2Modules.debate_inputs?.author1 || '彼得·蒂尔';
+      }
+      if (document.getElementById('debate-author-2')) {
+        document.getElementById('debate-author-2').value = v2Modules.debate_inputs?.author2 || '雷军';
+      }
+      if (document.getElementById('debate-query')) {
+        document.getElementById('debate-query').value = v2Modules.debate_inputs?.query || '';
+      }
+      renderDebateScript(state.debateMarkdown);
+    } else {
+      if (document.getElementById('debate-query')) {
+        document.getElementById('debate-query').value = '';
+      }
+      els.debateMessagesBox.innerHTML = `
+        <div style="color:var(--text-muted); text-align:center; margin-top:120px;">
+          💡 选择双方辩友和业务焦点，开启跨时代思想对抗，碰撞出非共识战略。
+        </div>
+      `;
     }
-    if (imgBox3) {
-      const url = state.generatedImages['team_mindmap'];
-      imgBox3.innerHTML = url 
-        ? `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${url}', 'team_mindmap')" title="点击查看大图">`
-        : '<span style="color:var(--text-muted); font-size:12px;">未生成</span>';
+
+    // 3. Restore Strategy Simulator
+    state.simulatorResult = v2Modules.simulator || null;
+    if (state.simulatorResult) {
+      if (document.getElementById('sandbox-scenario')) {
+        document.getElementById('sandbox-scenario').value = state.simulatorResult.scenario || '';
+      }
+      if (document.getElementById('sandbox-budget')) {
+        document.getElementById('sandbox-budget').value = state.simulatorResult.budget || '100000';
+      }
+      if (document.getElementById('sandbox-team')) {
+        document.getElementById('sandbox-team').value = state.simulatorResult.teamSize || '4';
+      }
+      updateDial(state.simulatorResult.successProbability || 0);
+      renderSimulationChart(state.simulatorResult.timelineProjections || []);
+      renderSimulationFailurePoints(state.simulatorResult.criticalFailurePoints || []);
+    } else {
+      if (document.getElementById('sandbox-scenario')) {
+        document.getElementById('sandbox-scenario').value = '';
+      }
+      if (document.getElementById('sandbox-budget')) {
+        document.getElementById('sandbox-budget').value = '100000';
+      }
+      if (document.getElementById('sandbox-team')) {
+        document.getElementById('sandbox-team').value = '4';
+      }
+      updateDial(0);
+      
+      const canvas = document.getElementById('sandboxCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      els.sandboxFailuresList.innerHTML = `
+        <span style="color:var(--text-muted);">暂无推演结果。运行推演以评估决策风险瓶颈。</span>
+      `;
     }
+
+    // 4. Restore Roundtable
+    state.roundtableHistory = v2Modules.roundtable || [];
+    if (state.roundtableHistory.length > 0) {
+      els.roundtableChatMessages.innerHTML = '';
+      state.roundtableHistory.forEach(msg => {
+        appendChatMessage(msg.role, msg.role === 'user' ? '用户' : '顾问团', msg.content);
+      });
+    } else {
+      els.roundtableChatMessages.innerHTML = `
+        <div style="color:var(--text-muted); text-align:center; padding:100px 0;">
+          🛋️ 勾选左侧作者组建顾问团，在下方提问开始交互式多作者会议...
+        </div>
+      `;
+    }
+
+    // Restore infographic states: resolve idb markers / legacy inline base64
+    restoreImagesForRecord(record);
 
     // Enable action buttons
     els.zipDownloadInfographicsBtn.disabled = false;
     els.saveReportToLibraryBtn.disabled = false;
     els.distillSkillBtn.disabled = false;
     els.podcastBriefingBtn.disabled = false;
+    els.copyReportBtn.disabled = false;
 
     showToast(`成功载入《${record.title}》的决策资源！`);
     
@@ -2964,9 +3568,23 @@
     document.querySelector('[data-view="view-report"]').click();
   };
 
-  els.saveReportToLibraryBtn.addEventListener('click', async () => {
+  async function saveReportV2(isAuto = false) {
     if (!state.reportMarkdown) return;
     
+    // Ensure state.parsedJSON.v2_modules is fully populated
+    if (!state.parsedJSON) state.parsedJSON = {};
+    state.parsedJSON.v2_modules = {
+      podcast: state.podcastInfo || null,
+      debate: state.debateMarkdown || '',
+      debate_inputs: {
+        author1: document.getElementById('debate-author-1')?.value || '',
+        author2: document.getElementById('debate-author-2')?.value || '',
+        query: document.getElementById('debate-query')?.value.trim() || ''
+      },
+      simulator: state.simulatorResult || null,
+      roundtable: state.roundtableHistory || []
+    };
+
     const record = {
       title: els.inputTitle.value.trim() || '未定义书籍',
       author: els.inputAuthor.value.trim() || '未知作者',
@@ -2979,11 +3597,11 @@
       chunks: state.chunks,
       parsed_json: state.parsedJSON,
       skill_markdown: state.skillMarkdown || '',
-      images_json: state.generatedImages || {}
+      images_json: imagesJsonForStore()
     };
 
     if (supabaseClient) {
-      showToast('正在同步保存至 Supabase 云端...');
+      if (!isAuto) showToast('正在同步保存至 Supabase 云端...');
       try {
         let result;
         if (state.currentRecordId && state.currentRecordId.length > 20) {
@@ -3001,22 +3619,29 @@
           }
         }
         if (result.error) throw result.error;
-        showToast('战略报告与技能包已同步至 Supabase 云数据库！');
+        if (!isAuto) showToast('战略报告与技能包已同步至 Supabase 云数据库！');
       } catch (err) {
         console.error('Supabase save failed, saving to localStorage:', err);
-        saveLocalV2(record);
+        saveLocalV2(record, isAuto);
       }
     } else {
-      saveLocalV2(record);
+      saveLocalV2(record, isAuto);
     }
     
     // Refresh roundtable advisors list
     await renderRoundtableAdvisorsV2();
-  });
+  }
 
-  function saveLocalV2(record) {
+  els.saveReportToLibraryBtn.addEventListener('click', () => saveReportV2(false));
+
+  function saveLocalV2(record, isAuto = false) {
     const records = getLibraryLocalV2();
-    const existingIndex = state.currentRecordId ? records.findIndex(r => r.id === state.currentRecordId) : -1;
+    let existingIndex = state.currentRecordId ? records.findIndex(r => r.id === state.currentRecordId) : -1;
+    // Same book + author updates in place instead of stacking duplicate records
+    if (existingIndex === -1) {
+      existingIndex = records.findIndex(r => r.title === record.title && (r.author || '') === (record.author || ''));
+      if (existingIndex !== -1) state.currentRecordId = records[existingIndex].id;
+    }
     
     if (existingIndex !== -1) {
       records[existingIndex] = {
@@ -3027,7 +3652,7 @@
       };
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
       loadedLibraryRecordsV2 = records; // Sync in-memory array!
-      showToast('战略报告与技能包已在本地更新保存。');
+      if (!isAuto) showToast('战略报告与技能包已在本地更新保存。');
     } else {
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       state.currentRecordId = id;
@@ -3041,7 +3666,7 @@
       records.unshift(newRec);
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
       loadedLibraryRecordsV2 = records; // Sync in-memory array!
-      showToast('战略报告已保存至本地书卡库缓存中。');
+      if (!isAuto) showToast('战略报告已保存至本地书卡库缓存中。');
     }
   }
 
@@ -3108,6 +3733,7 @@
       btn.innerHTML = '⏳ 正在蒸馏为 AI 技能...';
     }
 
+    setTabBusy('view-skills', true);
     try {
       showToast(`正在将《${title}》蒸馏为 AI 技能包...`);
       const res = await fetch('/.netlify/functions/v2-distill-skill', {
@@ -3175,6 +3801,7 @@
     } catch (e) {
       showToast(`蒸馏失败: ${e.message}`, 'error');
     } finally {
+      setTabBusy('view-skills', false);
       if (isLibraryDirect) {
         if (btn) {
           btn.disabled = false;
@@ -3412,7 +4039,16 @@
     if (idx !== -1) {
       records[idx].images_json = imagesJson;
       records[idx].imagesJson = imagesJson;
-      localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      try {
+        localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      } catch (e) {
+        // Base64 images can blow the ~5MB localStorage quota — keep the record
+        // data but drop the heavyweight images instead of failing the flow.
+        records[idx].images_json = {};
+        records[idx].imagesJson = {};
+        localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+        showToast('本地存储空间不足，逻辑图未持久化（仍可在当前页面查看与下载）。', 'warning');
+      }
       loadedLibraryRecordsV2 = records; // Sync in-memory array!
     }
   }
@@ -3429,23 +4065,22 @@
 
     await loadLibraryDataV2();
 
-    // Collect all generated images across all loaded library records
+    // Collect all generated images across all loaded library records,
+    // resolving idb markers (and reading legacy inline base64 directly)
     const galleryItems = [];
-    loadedLibraryRecordsV2.forEach(record => {
+    for (const record of loadedLibraryRecordsV2) {
       const imgs = record.images_json || record.imagesJson;
-      if (imgs && typeof imgs === 'object') {
-        Object.keys(imgs).forEach(cardType => {
-          const imgUrl = imgs[cardType];
-          if (imgUrl) {
-            galleryItems.push({
-              record,
-              cardType,
-              imgUrl
-            });
-          }
-        });
+      if (!imgs || typeof imgs !== 'object') continue;
+      for (const cardType of Object.keys(imgs)) {
+        let imgUrl = imgs[cardType];
+        if (!imgUrl) continue;
+        if (!String(imgUrl).startsWith('data:')) {
+          imgUrl = await idbGetImage(imageIdbKey(record.title, cardType));
+          if (!imgUrl) continue;
+        }
+        galleryItems.push({ record, cardType, imgUrl });
       }
-    });
+    }
 
     if (galleryItems.length === 0) {
       galleryEl.innerHTML = `
@@ -3459,7 +4094,8 @@
     const typeLabels = {
       strategy_card: '💡 垄断定位与核心逻辑',
       execution_poster: '📅 12个月业务执行时间表',
-      team_mindmap: '👥 团队协同与共学共识'
+      team_mindmap: '👥 团队协同与共学共识',
+      social_media_card: '📱 微信/小红书爆款信息图'
     };
 
     galleryEl.innerHTML = galleryItems.map(item => {
@@ -3515,7 +4151,9 @@
     if (state.podcastCache && state.podcastCache[cacheKey]) {
       console.log('[V2] Loading podcast from memory cache...');
       const cached = state.podcastCache[cacheKey];
+      state.podcastInfo = cached;
       loadPodcastAudio(cached.audioUrl, cached.script, title);
+      autoSaveV2Modules();
       return;
     }
     
@@ -3534,12 +4172,16 @@
       
       // Cache the result
       if (!state.podcastCache) state.podcastCache = {};
-      state.podcastCache[cacheKey] = {
+      const pInfo = {
         audioUrl: result.audioUrl,
-        script: result.script
+        script: result.script,
+        isSilentFallback: result.isSilentFallback
       };
+      state.podcastCache[cacheKey] = pInfo;
+      state.podcastInfo = pInfo;
       
       loadPodcastAudio(result.audioUrl, result.script, title);
+      autoSaveV2Modules();
     } catch (e) {
       console.error(e);
       showToast(`生成简报失败: ${e.message}`, 'error');
@@ -3550,10 +4192,28 @@
   function loadPodcastAudio(audioUrl, script, title) {
     els.podcastLoadingOverlay.style.display = 'none';
     els.podcastTranscript.textContent = script;
+    
+    const isSilent = state.podcastInfo && state.podcastInfo.isSilentFallback;
+    if (isSilent) {
+      els.podcastAudio.removeAttribute('src');
+      els.podcastAudio.load();
+      els.podcastProgressBar.style.width = '0%';
+      els.podcastTimeCurrent.textContent = '00:00';
+      
+      // Calculate estimated duration instantly
+      const cleanText = script.replace(/【📢.*?】\n\n/, '').trim();
+      const totalLen = cleanText.length;
+      const totalSecs = Math.max(1, Math.floor(totalLen / 5));
+      els.podcastTimeTotal.textContent = formatTime(totalSecs);
+      
+      speakText(script);
+      els.podcastBtnPlay.textContent = '⏸️';
+      return;
+    }
+    
     els.podcastAudio.src = audioUrl;
     els.podcastAudio.load();
     
-    // Auto play
     els.podcastAudio.play().then(() => {
       els.podcastBtnPlay.textContent = '⏸️';
     }).catch(err => {
@@ -3595,11 +4255,31 @@
   
   // Controls
   els.podcastBtnPlay.addEventListener('click', () => {
+    const isSilent = state.podcastInfo && state.podcastInfo.isSilentFallback;
+    if (isSilent) {
+      if (window.speechSynthesis.speaking) {
+        if (window.speechSynthesis.paused) {
+          speechStartTime = Date.now(); // reset start time for timer delta calculation
+          window.speechSynthesis.resume();
+          els.podcastBtnPlay.textContent = '⏸️';
+        } else {
+          window.speechSynthesis.pause();
+          els.podcastBtnPlay.textContent = '▶️';
+        }
+      } else {
+        const scriptText = els.podcastTranscript.textContent || '';
+        speakText(scriptText);
+        els.podcastBtnPlay.textContent = '⏸️';
+      }
+      return;
+    }
+
     const audio = els.podcastAudio;
     if (!audio.src) return;
     if (audio.paused) {
-      audio.play();
-      els.podcastBtnPlay.textContent = '⏸️';
+      audio.play().then(() => {
+        els.podcastBtnPlay.textContent = '⏸️';
+      });
     } else {
       audio.pause();
       els.podcastBtnPlay.textContent = '▶️';
@@ -3667,10 +4347,291 @@
         });
     }
   });
+
+  // Rich copy of report to clipboard (optimized for WeChat and Xiaohongshu)
+  async function copyReportRichText() {
+    if (!state.reportMarkdown) return;
+    
+    let htmlContent = state.reportHtml;
+    
+    // Transform .ref-badge tags into inline styled tags suitable for paste
+    htmlContent = htmlContent.replace(/<span class="ref-badge"[^>]*>Ref-(\d+)<\/span>/g, '<sup style="font-size: 10px; color: #0d9488; background: rgba(13, 148, 136, 0.1); padding: 1px 3.5px; border-radius: 3px; margin: 0 2.5px; font-family: monospace;">Ref-$1</sup>');
+    
+    // Create a temporary element to manipulate DOM styles
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Programmatically convert dark-theme inline styles to premium light-theme styles
+    // 1. Headers
+    const h1s = tempDiv.querySelectorAll('h1');
+    h1s.forEach(el => {
+      el.style.color = '#1a202c';
+      el.style.borderBottom = '2px solid #0d9488';
+      el.style.paddingBottom = '6px';
+      el.style.marginTop = '24px';
+      el.style.marginBottom = '12px';
+      el.style.fontSize = '20px';
+    });
+    
+    const h2s = tempDiv.querySelectorAll('h2');
+    h2s.forEach(el => {
+      el.style.color = '#0d9488';
+      el.style.borderBottom = '1px solid #edf2f7';
+      el.style.paddingBottom = '6px';
+      el.style.marginTop = '20px';
+      el.style.marginBottom = '12px';
+      el.style.fontSize = '17px';
+    });
+    
+    const h3s = tempDiv.querySelectorAll('h3');
+    h3s.forEach(el => {
+      el.style.color = '#2563eb';
+      el.style.marginTop = '16px';
+      el.style.marginBottom = '8px';
+      el.style.fontSize = '15px';
+    });
+    
+    const h4s = tempDiv.querySelectorAll('h4');
+    h4s.forEach(el => {
+      el.style.color = '#1e3a8a';
+      el.style.marginTop = '12px';
+      el.style.marginBottom = '6px';
+      el.style.fontSize = '14px';
+    });
+    
+    // 2. Paragraphs, lists, blockquotes text color
+    const paragraphs = tempDiv.querySelectorAll('p');
+    paragraphs.forEach(el => {
+      el.style.color = '#2d3748';
+      el.style.fontSize = '14.5px';
+      el.style.lineHeight = '1.8';
+      el.style.marginBottom = '14px';
+      el.style.textAlign = 'justify';
+    });
+    
+    const lists = tempDiv.querySelectorAll('ul, ol');
+    lists.forEach(el => {
+      el.style.color = '#2d3748';
+      el.style.fontSize = '14.5px';
+      el.style.lineHeight = '1.8';
+      el.style.marginBottom = '14px';
+    });
+    
+    const blockquotes = tempDiv.querySelectorAll('blockquote');
+    blockquotes.forEach(el => {
+      el.style.borderLeft = '4px solid #7c3aed';
+      el.style.background = '#f3e8ff';
+      el.style.color = '#4a5568';
+      el.style.padding = '12px 16px';
+      el.style.borderRadius = '6px';
+      el.style.marginBottom = '14px';
+      el.style.fontStyle = 'normal';
+    });
+    
+    // 3. Code blocks & inline code
+    const preBlocks = tempDiv.querySelectorAll('pre');
+    preBlocks.forEach(el => {
+      el.style.background = '#f8fafc';
+      el.style.border = '1px solid #e2e8f0';
+      el.style.padding = '12px';
+      el.style.borderRadius = '6px';
+      el.style.color = '#0f172a';
+      el.style.marginBottom = '14px';
+    });
+    
+    const codes = tempDiv.querySelectorAll('code');
+    codes.forEach(el => {
+      if (el.parentElement.tagName !== 'PRE') {
+        el.style.background = '#f1f5f9';
+        el.style.color = '#0d9488';
+        el.style.padding = '2px 4px';
+        el.style.borderRadius = '4px';
+        el.style.fontFamily = 'monospace';
+      }
+    });
+
+    // 4. Tables
+    const tableWrappers = tempDiv.querySelectorAll('div[style*="overflow-x"]');
+    tableWrappers.forEach(el => {
+      el.style.border = '1px solid #edf2f7';
+      el.style.borderRadius = '8px';
+      el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+      el.style.marginBottom = '14px';
+    });
+
+    const tables = tempDiv.querySelectorAll('table');
+    tables.forEach(el => {
+      el.style.background = '#ffffff';
+      el.style.color = '#4a5568';
+    });
+
+    const ths = tempDiv.querySelectorAll('th');
+    ths.forEach(el => {
+      el.style.background = '#f0fdfa';
+      el.style.color = '#0d9488';
+      el.style.padding = '8px 10px';
+      el.style.borderBottom = '2px solid #edf2f7';
+      el.style.borderRight = '1px solid #edf2f7';
+    });
+
+    const tds = tempDiv.querySelectorAll('td');
+    tds.forEach(el => {
+      el.style.padding = '8px 10px';
+      el.style.borderBottom = '1px solid #edf2f7';
+      el.style.borderRight = '1px solid #edf2f7';
+    });
+
+    const processedHtml = tempDiv.innerHTML;
+
+    // Wrap the entire output inside a highly structured, stylish <section> card wrapper
+    const styledHtml = `
+      <section style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.8; color: #2d3748; background-color: #ffffff; padding: 24px; border-radius: 12px; font-size: 14.5px; max-width: 650px; margin: 0 auto; box-sizing: border-box; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <section style="border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 20px; text-align: center;">
+          <h1 style="font-size: 20px; font-weight: bold; color: #0d9488; margin: 0 0 6px 0;">《${els.inputTitle.value.trim() || '商业战略简报'}》深度拆解报告</h1>
+          ${els.inputAuthor.value.trim() ? `<p style="font-size: 13px; color: #718096; margin: 0;">作者：${els.inputAuthor.value.trim()}</p>` : ''}
+        </section>
+        <section>
+          ${processedHtml}
+        </section>
+        <section style="margin-top: 24px; border-top: 1px dashed #e2e8f0; padding-top: 12px; text-align: right;">
+          <p style="font-size: 11px; color: #a0aec0; margin: 0;">报告生成于 小鹿 AI 拆书工坊 V2.0</p>
+        </section>
+      </section>
+    `;
+
+    const plainText = state.reportMarkdown
+      .replace(/\[Ref-(\d+)\]/g, '[Ref-$1]')
+      .replace(/#/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/__/g, '')
+      .replace(/`/g, '');
+
+    try {
+      const blobHtml = new Blob([styledHtml], { type: 'text/html' });
+      const blobText = new Blob([plainText], { type: 'text/plain' });
+
+      const data = [new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobText
+      })];
+
+      await navigator.clipboard.write(data);
+      showToast('📋 已复制战略报告富文本！可直接粘贴至微信公众号或小红书。');
+    } catch (err) {
+      console.warn('ClipboardItem copy failed, trying fallback:', err);
+      const listener = function(e) {
+        e.clipboardData.setData('text/html', styledHtml);
+        e.clipboardData.setData('text/plain', plainText);
+        e.preventDefault();
+      };
+      document.addEventListener('copy', listener);
+      const success = document.execCommand('copy');
+      document.removeEventListener('copy', listener);
+      if (success) {
+        showToast('📋 已复制战略报告富文本排版内容！');
+      } else {
+        showToast('复制失败，请手动选择复制。', 'error');
+      }
+    }
+  }
+
+  // Browser client-side fallback SpeechSynthesis for audio briefing
+  let speechUtterance = null;
+  let speechTimer = null;
+  let speechStartTime = 0;
+  let speechElapsed = 0; // ms
+  function speakText(text) {
+    window.speechSynthesis.cancel();
+    if (speechTimer) {
+      clearInterval(speechTimer);
+      speechTimer = null;
+    }
+    
+    const cleanText = text.replace(/【📢.*?】\n\n/, '').trim();
+    if (!cleanText) return;
+
+    speechUtterance = new SpeechSynthesisUtterance(cleanText);
+    
+    const voices = window.speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('CN') || v.lang.includes('HK'));
+    if (zhVoice) {
+      speechUtterance.voice = zhVoice;
+    }
+    
+    speechUtterance.rate = 1.0;
+    speechUtterance.pitch = 1.0;
+
+    const totalLen = cleanText.length;
+    const totalSecs = Math.max(1, Math.floor(totalLen / 5));
+    els.podcastTimeTotal.textContent = formatTime(totalSecs);
+
+    speechUtterance.onstart = function() {
+      speechStartTime = Date.now();
+      speechElapsed = 0;
+      
+      if (speechTimer) clearInterval(speechTimer);
+      speechTimer = setInterval(() => {
+        if (window.speechSynthesis.paused || !window.speechSynthesis.speaking) {
+          return;
+        }
+        const now = Date.now();
+        const delta = now - speechStartTime;
+        speechStartTime = now;
+        speechElapsed += delta;
+        
+        const currentSecs = Math.floor(speechElapsed / 1000);
+        els.podcastTimeCurrent.textContent = formatTime(currentSecs);
+        
+        const pct = Math.min(100, (currentSecs / totalSecs) * 100);
+        els.podcastProgressBar.style.width = `${pct}%`;
+        
+        if (currentSecs >= totalSecs) {
+          clearInterval(speechTimer);
+        }
+      }, 250);
+    };
+
+    speechUtterance.onend = function() {
+      if (speechTimer) {
+        clearInterval(speechTimer);
+        speechTimer = null;
+      }
+      els.podcastBtnPlay.textContent = '▶️';
+      els.podcastProgressBar.style.width = '0%';
+      els.podcastTimeCurrent.textContent = '00:00';
+    };
+
+    speechUtterance.onerror = function() {
+      if (speechTimer) {
+        clearInterval(speechTimer);
+        speechTimer = null;
+      }
+      els.podcastBtnPlay.textContent = '▶️';
+    };
+
+    speechUtterance.onboundary = function(event) {
+      if (event.name === 'word' || event.name === 'sentence' || !event.name) {
+        const charIdx = event.charIndex;
+        const currentSecsFromBoundary = Math.floor(charIdx / 5);
+        const calculatedElapsed = currentSecsFromBoundary * 1000;
+        if (Math.abs(speechElapsed - calculatedElapsed) > 2000) {
+          speechElapsed = calculatedElapsed;
+          speechStartTime = Date.now();
+        }
+      }
+    };
+
+    window.speechSynthesis.speak(speechUtterance);
+  }
   
   // Close Modals
   function closePodcastPlayer() {
     els.podcastAudio.pause();
+    window.speechSynthesis.cancel();
+    if (speechTimer) {
+      clearInterval(speechTimer);
+      speechTimer = null;
+    }
     els.podcastPlayerModal.style.display = 'none';
   }
   
@@ -3679,6 +4640,21 @@
   
   // Bind trigger button click
   els.podcastBriefingBtn.addEventListener('click', generatePodcastBriefing);
+  els.copyReportBtn.addEventListener('click', copyReportRichText);
+
+  // One-click demo fill: lets first-time users see value without preparing materials
+  document.getElementById('fillDemoBtn')?.addEventListener('click', () => {
+    els.inputTitle.value = '精益创业';
+    els.inputAuthor.value = '埃里克·莱斯';
+    els.inputGoal.value = '快速验证业务 MVP 构想，提炼可落地的验证动作与避坑清单';
+    els.inputBackground.value = '创业团队负责人，关注商业变现与最小可行产品验证';
+    els.inputMaterials.value = `第1章：开端。创业是某种形式的创新管理，需要全新的思考方式。新创企业不能只靠直觉和运气，需要科学的方法论。
+第2章：定义。凡是在极度不确定情况下创建新产品或服务的组织，都是创业公司。
+第3章：学习。精益创业的核心是"构建-衡量-学习"的反馈循环。需要快速验证价值假设和增长假设，而不是把时间浪费在没有市场检验的大量开发上。
+第4章：实验。将庞大的产品构想拆解为最小可行性产品(MVP)，快速投放市场看用户的真实行动，通过付费或使用行为来调整方向，必要时果断转型(Pivot)。
+第5章：飞跃。信念飞跃式的假设需要用实验来检验，最危险的是那些看起来显而易见却从未被验证的假设。`;
+    showToast('示例已填充！点击「🚀 发起深度拆解」即可体验完整流程。');
+  });
 
   // Bootloader V2 startup
   initSupabase();
