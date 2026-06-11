@@ -10,6 +10,7 @@
     "deploy-edgeone": "node scratch/sync-prompt.js && rm -rf dist && mkdir -p dist/v2 && cp index.html dist/index.html && cp index.html dist/v2/index.html && cp edgeone.json dist/edgeone.json && cp package.json dist/package.json && cp package-lock.json dist/package-lock.json && cp -r cloud-functions dist/cloud-functions && cp package.json dist/cloud-functions/package.json && cp package-lock.json dist/cloud-functions/package-lock.json && mkdir -p dist/cloud-functions/netlify && cp -r netlify/functions dist/cloud-functions/netlify/functions && mkdir -p dist/cloud-functions/lib && cp -r lib/weread-adapter.mjs dist/cloud-functions/lib/weread-adapter.mjs && cp AIRead提示词.md dist/cloud-functions/AIRead提示词.md && edgeone pages deploy dist -n AIRead -t \"qIAeWkKFd+I7XtLeR9H4h5lihJX7YOcT+rRjGnhg7qI=\""
   },
   "dependencies": {
+    "express": "^5.2.1",
     "openai": "latest"
   },
   "devDependencies": {
