@@ -1,12 +1,4 @@
-import { getOpenAIClient } from './openai-helper.mjs';
-
-const getModel = () => {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
-    return 'gpt-4o';
-  }
-  return model;
-};
+import { getOpenAIClient, getModel } from './openai-helper.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,7 +53,8 @@ export async function handler(event) {
    - 轮次 3：[${author1}] 防御与补充逻辑
    - 轮次 4：[${author2}] 终期对垒总结
    - 最终共识：[首席战略官总结] 针对用户痛点，结合双方观点提炼出的“落地行动指南”。
-4. 输出格式使用简洁的 Markdown。`;
+4. 输出格式使用简洁的 Markdown。
+5. 篇幅控制：每轮发言不超过 200 字，最终共识不超过 300 字，全文控制在 1500 字以内，观点必须锋利精炼、直击要害。`;
 
   try {
     const model = getModel();
@@ -71,7 +64,7 @@ export async function handler(event) {
       model: model,
       instructions: systemInstructions,
       input: `请开始辩论：“${query}”`,
-      max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
+      max_output_tokens: Math.min(Number(process.env.MAX_OUTPUT_TOKENS || 16384), 4096),
       ...(isReasoning && process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
     });
 

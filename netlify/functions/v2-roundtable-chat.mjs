@@ -1,12 +1,4 @@
-import { getOpenAIClient } from './openai-helper.mjs';
-
-const getModel = () => {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
-    return 'gpt-4o';
-  }
-  return model;
-};
+import { getOpenAIClient, getModel } from './openai-helper.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,7 +74,7 @@ ${additionalSkillsInstructions}
       model: model,
       instructions: systemInstructions,
       input: `这是群聊对话历史：\n${formattedHistory}\n\n请对此进行回复。`,
-      max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
+      max_output_tokens: Math.min(Number(process.env.MAX_OUTPUT_TOKENS || 16384), 2048),
       ...(isReasoning && process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
     });
 

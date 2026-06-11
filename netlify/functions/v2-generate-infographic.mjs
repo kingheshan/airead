@@ -33,7 +33,7 @@ export async function handler(event) {
     return json(400, { error: '缺少书籍标题 title。' });
   }
 
-  const client = getOpenAIClient();
+  const client = getOpenAIClient({ forceOpenAI: true });
 
   // Custom visual prompts based on the requested card type
   let typePrompt = '';
@@ -47,6 +47,9 @@ export async function handler(event) {
   } else if (cardType === 'team_mindmap') {
     typePrompt = `A stunning conceptual team co-learning mind map and cognitive system. Dark theme, vibrant neon green and yellow accents. Showing network clusters, training cards, speech bubble icons, and collaborative pathways. Minimalist, clean composition.`;
     filenameLabel = 'team_mindmap';
+  } else if (cardType === 'social_media_card') {
+    typePrompt = `A highly engaging, aesthetic book knowledge card and infographic poster optimized for WeChat and Xiaohongshu social media platforms. Clean modern layout with clear, elegant typography, warm or clean minimal background colors. Showing key takeaways, core book quotes, personal growth checklists, and strategic insights. Highly visual, using beautiful vector icons representing reading, wisdom, growth, and business strategy. A masterpiece designed for viral sharing, clean composition, high-end design, flat vector graphics.`;
+    filenameLabel = 'social_media_card';
   } else {
     typePrompt = `A professional, premium conceptual infographic card for the book. Dark theme with neon accent lines. Show structural flowcharts and cognitive mapping. Minimal text, clean layout.`;
   }

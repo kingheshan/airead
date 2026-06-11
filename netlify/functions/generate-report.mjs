@@ -1,12 +1,4 @@
-import { getOpenAIClient } from './openai-helper.mjs';
-
-const getModel = () => {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
-    return 'gpt-4o';
-  }
-  return model;
-};
+import { getOpenAIClient, getModel } from './openai-helper.mjs';
 const getMaxMaterialChars = () => Number(process.env.MAX_MATERIAL_CHARS || 60000);
 const getMaxOutputTokens = () => Number(process.env.MAX_OUTPUT_TOKENS || 16384);
 

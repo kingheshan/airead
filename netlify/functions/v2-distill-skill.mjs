@@ -1,12 +1,4 @@
-import { getOpenAIClient } from './openai-helper.mjs';
-
-const getModel = () => {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
-    return 'gpt-4o';
-  }
-  return model;
-};
+import { getOpenAIClient, getModel } from './openai-helper.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,6 +67,8 @@ description: [简短描述该书籍的方法论核心，说明它如何指导用
 - 详细罗列在应用此技能时最容易犯的错误和误区。
 - 指明 AI 助手在检测到用户什么行为或想法时，应主动发出红线警告并提供纠偏方案。
 
+【篇幅要求】全文控制在 1200-1800 字以内，每个章节使用要点式短句，严禁冗长铺垫，保证 30 秒内可读完核心内容。
+
 请直接输出符合上述结构的 Markdown 格式技能卡，不要包含任何前后解释文字或 \`\`\` 包装。`;
 
   try {
@@ -85,7 +79,7 @@ description: [简短描述该书籍的方法论核心，说明它如何指导用
       model: model,
       instructions: systemInstructions,
       input: `书名：《${title}》\n作者：${author || '未知作者'}\n\n以下是该书籍的详细拆解报告数据，请基于此进行提炼与蒸馏：\n\n${reportText}`,
-      max_output_tokens: Number(process.env.MAX_OUTPUT_TOKENS || 16384),
+      max_output_tokens: Math.min(Number(process.env.MAX_OUTPUT_TOKENS || 16384), 4096),
       ...(isReasoning && process.env.OPENAI_REASONING_EFFORT ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } } : {})
     });
 

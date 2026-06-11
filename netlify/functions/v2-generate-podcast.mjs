@@ -1,12 +1,4 @@
-import { getOpenAIClient } from './openai-helper.mjs';
-
-const getModel = () => {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
-    return 'gpt-4o';
-  }
-  return model;
-};
+import { getOpenAIClient, getModel } from './openai-helper.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,35 +52,46 @@ ${report.slice(0, 4000)}
 请为用户的目标定制录制文稿：`;
 
     console.log(`[V2] Generating podcast briefing script using model ${getModel()}...`);
-    const completion = await client.chat.completions.create({
+    const response = await client.responses.create({
       model: getModel(),
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      max_completion_tokens: 800
+      instructions: systemPrompt,
+      input: userPrompt,
+      max_output_tokens: 800
     });
 
-    const scriptText = completion.choices?.[0]?.message?.content?.trim() || '';
+    const scriptText = response.output_text?.trim() || '';
     if (!scriptText) {
       throw new Error('Failed to generate briefing script.');
     }
 
-    console.log(`[V2] Generating TTS audio using model tts-1 with voice onyx...`);
-    const ttsResponse = await client.audio.speech.create({
-      model: 'tts-1',
-      voice: 'onyx', // deep professional voice
-      input: scriptText
-    });
+    let base64Audio = '';
+    let transcriptText = scriptText;
+    
+    try {
+      console.log(`[V2] Generating TTS audio using model tts-1 with voice onyx...`);
+      const ttsResponse = await client.audio.speech.create({
+        model: 'tts-1',
+        voice: 'onyx', // deep professional voice
+        input: scriptText
+      });
 
-    const buffer = Buffer.from(await ttsResponse.arrayBuffer());
-    const base64Audio = buffer.toString('base64');
+      const buffer = Buffer.from(await ttsResponse.arrayBuffer());
+      base64Audio = buffer.toString('base64');
+    } catch (ttsError) {
+      console.warn(`[V2] TTS generation failed: ${ttsError.message}. Using silent MP3 fallback...`);
+      // A tiny 1-second silent MP3 base64
+      base64Audio = 'SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//usQAAAAAAAAAAAAAAAAAAAAAABYaW5nAAAADwAAAAQAAAQAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//usRAAAAAAABQA3gAAA0gAAAAngAAAgAFcW2sAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/+//usRAAAAAAABQA3gAAA0gAAAAngAAAgADGlthAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/';
+      transcriptText = `【📢 简报电台提示：由于您当前在腾讯云部署环境使用的是 DEEPSEEK 密钥，该密钥不支持 OpenAI TTS 语音合成接口。已为您加载定制的文字版商业简报。如需正常收听语音，请在腾讯云配置真实的 OpenAI 密钥。】\n\n` + scriptText;
+    }
+
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
+    const isSilentFallback = (base64Audio.length < 5000);
 
     return json(200, {
       audioUrl,
-      script: scriptText,
-      title
+      script: transcriptText,
+      title,
+      isSilentFallback
     });
 
   } catch (error) {

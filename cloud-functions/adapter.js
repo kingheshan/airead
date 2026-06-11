@@ -41,6 +41,12 @@ if (process.env.DEEPSEEK) {
 if (process.env.DEEPSEEK_API_KEY) {
   process.env.DEEPSEEK_API_KEY = decodeKey(process.env.DEEPSEEK_API_KEY);
 }
+if (!process.env.OPENAI_API_KEY) {
+  const dsKey = process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY;
+  if (dsKey) {
+    process.env.OPENAI_API_KEY = dsKey;
+  }
+}
 
 export function makeAdapter(handler) {
   return async function onRequest(context) {
@@ -105,6 +111,12 @@ export function makeAdapter(handler) {
     }
     if (process.env.DEEPSEEK_API_KEY) {
       process.env.DEEPSEEK_API_KEY = decodeKey(process.env.DEEPSEEK_API_KEY);
+    }
+    if (!process.env.OPENAI_API_KEY) {
+      const dsKey = process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY;
+      if (dsKey) {
+        process.env.OPENAI_API_KEY = dsKey;
+      }
     }
     
     // Standard response headers for all API requests

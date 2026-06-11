@@ -1,32 +1,134 @@
 import OpenAI from 'openai';
 
-export function getOpenAIClient() {
-  let key = (process.env.OPENAI_API_KEY || '').trim();
-  if (!key) {
+function decodeKey(val) {
+  if (!val) return val;
+  const trimmedVal = val.trim();
+  let decodedVal = trimmedVal;
+  if (trimmedVal.includes('__DOUBLE_DASH__')) {
+    decodedVal = trimmedVal.replace(/__DOUBLE_DASH__/g, '--');
+  } else if (!trimmedVal.startsWith('sk-')) {
+    let decoded = null;
+    // 1. Try Hex decoding (Hex consists only of 0-9, a-f, A-F)
+    if (/^[0-9a-fA-F]+$/.test(trimmedVal)) {
+      try {
+        const hexDecoded = Buffer.from(trimmedVal, 'hex').toString('utf8');
+        if (hexDecoded.startsWith('sk-')) {
+          decoded = hexDecoded;
+        }
+      } catch (e) {}
+    }
+    // 2. Try Base64 decoding (Base64 can have padding '=' or not)
+    if (!decoded) {
+      try {
+        const base64Decoded = Buffer.from(trimmedVal, 'base64').toString('utf8');
+        if (base64Decoded.startsWith('sk-')) {
+          decoded = base64Decoded;
+        }
+      } catch (e) {}
+    }
+    if (decoded) {
+      decodedVal = decoded;
+    }
+  }
+  return decodedVal.trim();
+}
+
+// Auto-decode keys if they are hex/base64 encoded in process.env
+if (process.env.OPENAI_API_KEY) {
+  process.env.OPENAI_API_KEY = decodeKey(process.env.OPENAI_API_KEY);
+}
+if (process.env.DEEPSEEK) {
+  process.env.DEEPSEEK = decodeKey(process.env.DEEPSEEK);
+}
+if (process.env.DEEPSEEK_API_KEY) {
+  process.env.DEEPSEEK_API_KEY = decodeKey(process.env.DEEPSEEK_API_KEY);
+}
+
+// Ensure OPENAI_API_KEY is populated if DEEPSEEK is configured, passing handler validation
+if (!process.env.OPENAI_API_KEY) {
+  const dsKey = process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY;
+  if (dsKey) {
+    process.env.OPENAI_API_KEY = dsKey;
+  }
+}
+
+// Shared model selection: respect OPENAI_MODEL as-is (e.g. gpt-5.5).
+// DeepSeek deployments remap inside the client wrapper, so no downgrade here.
+export function getModel() {
+  return (process.env.OPENAI_MODEL || 'gpt-4o').trim();
+}
+
+// Reasoning-capable OpenAI model families accept reasoning_effort in chat.completions
+function supportsReasoningEffort(model) {
+  return /^o\d/.test(model) || model.includes('gpt-5');
+}
+
+export function getOpenAIClient(options = {}) {
+  const forceOpenAI = options.forceOpenAI === true;
+  
+  // Prioritize DEEPSEEK keys over generic OPENAI_API_KEY unless forced to use OpenAI
+  let key = '';
+  if (forceOpenAI) {
+    key = (process.env.OPENAI_API_KEY || '').trim();
+    if (!key) {
+      key = (process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY || '').trim();
+    }
+  } else {
     key = (process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY || '').trim();
+    if (!key) {
+      key = (process.env.OPENAI_API_KEY || '').trim();
+    }
   }
   
   let baseURL = undefined;
   let isDeepSeek = false;
   
-  // Auto-detect DeepSeek API key format (starts with sk- and is a 32-character hex key)
-  if (key.startsWith('sk-') && key.length === 35 && /^[0-9a-fA-F]+$/.test(key.slice(3))) {
-    isDeepSeek = true;
-    baseURL = 'https://api.deepseek.com/v1';
-  } else if (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.includes('deepseek')) {
-    isDeepSeek = true;
-    baseURL = process.env.OPENAI_BASE_URL;
-  } else if (process.env.OPENAI_BASE_URL) {
-    baseURL = process.env.OPENAI_BASE_URL;
-  } else if (process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY) {
-    isDeepSeek = true;
-    baseURL = 'https://api.deepseek.com/v1';
+  if (!forceOpenAI) {
+    // Auto-detect DeepSeek API key format (starts with sk- and is a 32-character hex key)
+    if (key.startsWith('sk-') && key.length === 35 && /^[0-9a-fA-F]+$/.test(key.slice(3))) {
+      isDeepSeek = true;
+      baseURL = 'https://api.deepseek.com/v1';
+    } else if (process.env.OPENAI_BASE_URL && process.env.OPENAI_BASE_URL.includes('deepseek')) {
+      isDeepSeek = true;
+      baseURL = process.env.OPENAI_BASE_URL;
+    } else if (process.env.OPENAI_BASE_URL) {
+      baseURL = process.env.OPENAI_BASE_URL;
+    } else if (process.env.DEEPSEEK || process.env.DEEPSEEK_API_KEY) {
+      isDeepSeek = true;
+      baseURL = 'https://api.deepseek.com/v1';
+    }
+  } else {
+    // If forcing OpenAI, we only use OPENAI_BASE_URL if it is not deepseek.
+    if (process.env.OPENAI_BASE_URL && !process.env.OPENAI_BASE_URL.includes('deepseek')) {
+      baseURL = process.env.OPENAI_BASE_URL;
+    }
   }
 
   const client = new OpenAI({
     apiKey: key,
     ...(baseURL ? { baseURL } : {})
   });
+
+  // Intercept and wrap chat.completions.create to map models for DeepSeek
+  if (client.chat && client.chat.completions) {
+    const originalChatCreate = client.chat.completions.create;
+    client.chat.completions.create = async function (params, options) {
+      let model = params.model || 'gpt-4o-mini';
+      if (isDeepSeek) {
+        if (model.startsWith('o1') || model.startsWith('o3') || model.includes('reason') || model.includes('5.5')) {
+          model = 'deepseek-reasoner';
+        } else {
+          model = 'deepseek-chat';
+        }
+        console.log(`[DeepSeek chat.completions Wrapper] Mapped model to: ${model}`);
+      }
+      const newParams = {
+        ...params,
+        model: model
+      };
+      return originalChatCreate.call(client.chat.completions, newParams, options);
+    };
+  }
 
   // Intercept client.images.generate for DeepSeek since DeepSeek doesn't support image generation
   if (!client.images) {
@@ -161,7 +263,7 @@ export function getOpenAIClient() {
     client.responses = {};
   }
 
-  // Intercept and wrap responses.create to use standard chat.completions.create under the hood
+  // Intercept and wrap responses.create to use standard chat.completions.create under the hood with internal streaming
   client.responses.create = async function (params, options) {
     let model = params.model || 'gpt-4o-mini';
     const instructions = params.instructions;
@@ -186,21 +288,50 @@ export function getOpenAIClient() {
       messages.push({ role: 'user', content: input });
     }
 
+    // OpenAI's newer models (gpt-5.x / o-series) reject max_tokens; use max_completion_tokens.
+    // DeepSeek's OpenAI-compatible endpoint still expects max_tokens.
+    const tokenParam = max_output_tokens
+      ? (isDeepSeek ? { max_tokens: max_output_tokens } : { max_completion_tokens: max_output_tokens })
+      : {};
+
+    // chat.completions rejects the Responses-style `reasoning` object; translate to
+    // reasoning_effort, defaulting reasoning-capable models to env/low so they stay fast.
+    const reasoningEffort = params.reasoning?.effort || process.env.OPENAI_REASONING_EFFORT || 'low';
+    const reasoningParam = (!isDeepSeek && supportsReasoningEffort(model))
+      ? { reasoning_effort: reasoningEffort }
+      : {};
+
     const chatParams = {
       model: model,
       messages: messages,
-      ...(max_output_tokens ? { max_tokens: max_output_tokens } : {}),
-      ...(params.reasoning && !isDeepSeek ? { reasoning: params.reasoning } : {})
+      ...tokenParam,
+      ...reasoningParam,
+      stream: true // Enable streaming to prevent connection termination
     };
 
-    console.log(`[OpenAI Wrapper] Translating responses.create to chat.completions.create (Model: ${model}, BaseURL: ${baseURL || 'Default OpenAI'})`);
+    console.log(`[OpenAI Wrapper] Translating responses.create to STREAMING chat.completions.create (Model: ${model}, BaseURL: ${baseURL || 'Default OpenAI'})`);
 
-    const chatCompletion = await client.chat.completions.create(chatParams, options);
+    const stream = await client.chat.completions.create(chatParams, options);
+
+    let content = '';
+    for await (const chunk of stream) {
+      const deltaContent = chunk.choices?.[0]?.delta?.content || '';
+      content += deltaContent;
+    }
 
     // Return the response object matching the Responses API interface
     return {
-      output_text: chatCompletion.choices?.[0]?.message?.content || '',
-      raw: chatCompletion
+      output_text: content,
+      raw: {
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: content
+            }
+          }
+        ]
+      }
     };
   };
 

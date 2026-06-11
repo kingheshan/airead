@@ -1,12 +1,4 @@
-import { getOpenAIClient } from './openai-helper.mjs';
-
-const getModel = () => {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
-    return 'gpt-4o';
-  }
-  return model;
-};
+import { getOpenAIClient, getModel } from './openai-helper.mjs';
 const getMaxOutputTokens = () => Number(process.env.MAX_OUTPUT_TOKENS || 16384);
 
 const corsHeaders = {
@@ -111,8 +103,8 @@ JSON 结构必须严格符合以下定义：
       model: usedModel,
       instructions: systemInstructions,
       input: `请提取以下报告内容：\n\n${reportMarkdown}`,
-      max_output_tokens: getMaxOutputTokens()
-    }, { timeout: 18000 });
+      max_output_tokens: Math.min(getMaxOutputTokens(), 4096)
+    }, { timeout: 50000 });
 
     let jsonStr = response.output_text || '{}';
     jsonStr = jsonStr.replace(/^```json\s*/, '').replace(/```$/, '').trim();
@@ -127,8 +119,8 @@ JSON 结构必须严格符合以下定义：
         model: usedModel,
         instructions: systemInstructions,
         input: `请提取以下报告内容：\n\n${reportMarkdown}`,
-        max_output_tokens: getMaxOutputTokens()
-      }, { timeout: 15000 });
+        max_output_tokens: Math.min(getMaxOutputTokens(), 4096)
+      }, { timeout: 40000 });
 
       let jsonStr = fallbackResponse.output_text || '{}';
       jsonStr = jsonStr.replace(/^```json\s*/, '').replace(/```$/, '').trim();

@@ -1,15 +1,7 @@
-import { getOpenAIClient } from './openai-helper.mjs';
+import { getOpenAIClient, getModel } from './openai-helper.mjs';
 import fs from 'fs';
 import path from 'path';
 import { promptText } from './prompt-text.mjs';
-
-const getModel = () => {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-  if (model.includes('5.5') || model.startsWith('o1') || model.startsWith('o3')) {
-    return 'gpt-4o';
-  }
-  return model;
-};
 const getMaxMaterialChars = () => Number(process.env.MAX_MATERIAL_CHARS || 60000);
 const getMaxOutputTokens = () => Number(process.env.MAX_OUTPUT_TOKENS || 16384);
 
@@ -57,11 +49,12 @@ export async function handler(event) {
   }
   // Append moderate length constraint to prompt to balance speed and detail
   instructions += `\n\n【生成篇幅与效率要求 (PERFORMANCE & DETAIL BALANCE)】:
-为了保证系统响应速度，避免网关超时，请在保持极高拆解质量的前提下极度控制篇幅：
+为了兼顾拆解深度与系统响应速度，请严格遵守：
 1. 报告仅需包含第 0 至 12 部分（即：“0. 材料边界与可信度说明” 至 “12. 中国顶级产业实战视角矩阵”），绝对禁止生成之后的第 13-25 部分。
-2. 每个部分仅需输出 1 句最核心的结论/行动指南，严禁任何冗长铺垫和废话，字字珠玑，直切要害。
+2. 每个部分输出 2-4 个最核心的要点句或行动指南，可使用列表；严禁冗长铺垫和废话，直切要害。
 3. 严禁在最后输出任何 JSON 沉淀块。
-4. 全文的 Markdown 总字数必须控制在 800-1200 字之间。`;
+4. 全文的 Markdown 总字数控制在 1800-2600 字之间。
+5. Markdown 格式要求：每个章节标题独立成行（如 “## 1. 一句话拆书”），标题行与正文之间必须空一行，正文使用普通段落或列表。`;
 
   const userPrompt = buildUserPrompt(input, chunks);
 
@@ -70,7 +63,7 @@ export async function handler(event) {
   
   try {
     console.log(`[V2] Requesting report generation with model ${usedModel}...`);
-    // Set explicit timeout of 18 seconds for the primary model call
+    // Set explicit timeout of 60 seconds for the primary model call
     response = await client.responses.create({
       model: usedModel,
       instructions,
@@ -79,7 +72,7 @@ export async function handler(event) {
       ...(process.env.OPENAI_REASONING_EFFORT && (usedModel.startsWith('o1') || usedModel.startsWith('o3'))
          ? { reasoning: { effort: process.env.OPENAI_REASONING_EFFORT } }
          : {})
-    }, { timeout: 28000 });
+    }, { timeout: 60000 });
 
     return json(200, {
       report: response.output_text || '',
@@ -98,7 +91,7 @@ export async function handler(event) {
         instructions,
         input: userPrompt,
         max_output_tokens: getMaxOutputTokens()
-      }, { timeout: 25000 }); // 25s timeout for fallback
+      }, { timeout: 45000 }); // 45s timeout for fallback
 
       return json(200, {
         report: fallbackResponse.output_text || '',
