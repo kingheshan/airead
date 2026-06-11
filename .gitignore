@@ -13,3 +13,8 @@ node_modules/
 
 # Temporary dist folder
 dist/
+
+# Files containing secrets — never commit
+pulled-env.txt
+cookies.txt
+.claude/

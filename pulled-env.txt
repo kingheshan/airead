@@ -1,1 +1,0 @@
-WEREAD_API_KEY=wrk-pGCmsroGRSqP7D7kj3fdjwAA
