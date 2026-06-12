@@ -11,6 +11,8 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:better-sqlite3@^12.10.0",
+        "npm:express@^5.2.1",
         "npm:netlify-cli@latest",
         "npm:openai@latest"
       ]
