@@ -18,3 +18,7 @@ dist/
 pulled-env.txt
 cookies.txt
 .claude/
+data/
+*.db
+*.db-wal
+*.db-shm

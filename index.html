@@ -2348,7 +2348,9 @@
     const idx = records.findIndex(r => r.id === id);
     if (idx !== -1) {
       records[idx].parsed_json = parsedJSON;
+      records[idx].updatedAt = Date.now();
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      syncRecordToServer(records[idx]);
     }
   }
 
@@ -2468,8 +2470,8 @@
       if (typeof val === 'string' && val.startsWith('data:')) {
         state.generatedImages[cardType] = val;
       } else if (val) {
-        const fromIdb = await idbGetImage(imageIdbKey(record.title, cardType));
-        if (fromIdb) state.generatedImages[cardType] = fromIdb;
+        const img = await fetchImageAnywhere(imageIdbKey(record.title, cardType));
+        if (img) state.generatedImages[cardType] = img;
       }
     }
     paintInfographicBoxes();
@@ -2479,6 +2481,101 @@
   function setTabBusy(viewName, busy) {
     const tab = document.querySelector(`.tab-item[data-view="${viewName}"]`);
     if (tab) tab.classList.toggle('busy', !!busy);
+  }
+
+  // ===== Server-side library storage (SQLite via /.netlify/functions/library-db).
+  // Active on the self-hosted deployment; localStorage stays the synchronous
+  // working store and every write is mirrored to the server (write-through).
+  // On boot, server records merge into localStorage so data follows the user
+  // across browsers/devices. Unavailable platforms degrade silently. =====
+  let serverStorageAvailable = false;
+
+  async function libraryDbCall(payload) {
+    try {
+      const res = await fetch('/.netlify/functions/library-db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function syncRecordToServer(record) {
+    if (!serverStorageAvailable || !record || !record.id) return;
+    libraryDbCall({ action: 'save', record });
+  }
+
+  function syncDeleteToServer(id) {
+    if (!serverStorageAvailable || !id) return;
+    libraryDbCall({ action: 'delete', id });
+  }
+
+  // Persist an infographic into IndexedDB and mirror it to the server store
+  function persistImageEverywhere(key, dataUri) {
+    idbPutImage(key, dataUri);
+    if (serverStorageAvailable) {
+      libraryDbCall({ action: 'save-image', key, data: dataUri });
+    }
+  }
+
+  // Fetch an image: IndexedDB first, then the server store (backfilling idb)
+  async function fetchImageAnywhere(key) {
+    let img = await idbGetImage(key);
+    if (!img && serverStorageAvailable) {
+      const resp = await libraryDbCall({ action: 'get-image', key });
+      if (resp && resp.data) {
+        img = resp.data;
+        idbPutImage(key, img);
+      }
+    }
+    return img;
+  }
+
+  async function initServerStorage() {
+    const health = await libraryDbCall({ action: 'health' });
+    serverStorageAvailable = !!(health && health.available);
+    if (!serverStorageAvailable) return;
+
+    if (!supabaseClient && els.supabaseStatusText) {
+      els.supabaseStatusDot.style.backgroundColor = '#00f2fe';
+      els.supabaseStatusText.textContent = '🗄️ 服务器数据库存储已连接 (SQLite)';
+    }
+
+    // Two-way reconcile: newer updated_at wins locally; local-only records go up
+    const result = await libraryDbCall({ action: 'list' });
+    const serverRecords = (result && result.records) || [];
+    const local = getLibraryLocalV2();
+    const byId = new Map(local.map(r => [r.id, r]));
+    let changed = false;
+    for (const sr of serverRecords) {
+      const lr = byId.get(sr.id);
+      if (!lr || (sr.updatedAt || 0) > (lr.updatedAt || lr.createdAt || 0)) {
+        byId.set(sr.id, {
+          ...(lr || {}),
+          ...sr,
+          categoryLabel: getCategoryLabel(sr.category),
+          depthLabel: getDepthLabel(sr.depth)
+        });
+        changed = true;
+      }
+    }
+    for (const lr of local) {
+      if (!serverRecords.find(sr => sr.id === lr.id)) syncRecordToServer(lr);
+    }
+    if (changed) {
+      const merged = [...byId.values()].sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+      try {
+        localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(merged));
+        loadedLibraryRecordsV2 = merged;
+      } catch (e) {
+        console.warn('Local merge of server records skipped (storage quota):', e);
+      }
+      if (state.activeTab === 'view-library') renderLibraryV2();
+    }
   }
 
   function populateFlashcards() {
@@ -2946,10 +3043,12 @@
         ...records[dupIndex],
         ...record,
         categoryLabel: getCategoryLabel(record.category),
-        depthLabel: getDepthLabel(record.depth)
+        depthLabel: getDepthLabel(record.depth),
+        updatedAt: Date.now()
       };
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
       loadedLibraryRecordsV2 = records; // Sync in-memory array!
+      syncRecordToServer(records[dupIndex]);
       showToast('图生成成功，已更新本地决策库中该书籍的记录！');
       return;
     }
@@ -2960,11 +3059,13 @@
       ...record,
       categoryLabel: getCategoryLabel(record.category),
       depthLabel: getDepthLabel(record.depth),
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      updatedAt: Date.now()
     };
     records.unshift(newRecord);
     localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
     loadedLibraryRecordsV2 = records; // Sync in-memory array!
+    syncRecordToServer(newRecord);
     showToast('图生成成功，已自动保存该书籍的报告与逻辑图至本地决策库！');
   }
 
@@ -3027,8 +3128,8 @@
       state.generatedImages[cardType] = imgUrl;
       clearInterval(stageTimer);
 
-      // Persist heavyweight base64 into IndexedDB; records only keep an 'idb' marker
-      idbPutImage(imageIdbKey(title, cardType), imgUrl);
+      // Persist heavyweight base64 into IndexedDB + server store; records keep an 'idb' marker
+      persistImageEverywhere(imageIdbKey(title, cardType), imgUrl);
 
       imgContainer.innerHTML = `<img src="${imgUrl}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openImageLightbox('${imgUrl}', '${cardType}')" title="点击查看大图">`;
 
@@ -3648,10 +3749,12 @@
         ...records[existingIndex],
         ...record,
         categoryLabel: getCategoryLabel(record.category),
-        depthLabel: getDepthLabel(record.depth)
+        depthLabel: getDepthLabel(record.depth),
+        updatedAt: Date.now()
       };
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
       loadedLibraryRecordsV2 = records; // Sync in-memory array!
+      syncRecordToServer(records[existingIndex]);
       if (!isAuto) showToast('战略报告与技能包已在本地更新保存。');
     } else {
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -3661,11 +3764,13 @@
         ...record,
         categoryLabel: getCategoryLabel(record.category),
         depthLabel: getDepthLabel(record.depth),
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        updatedAt: Date.now()
       };
       records.unshift(newRec);
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
       loadedLibraryRecordsV2 = records; // Sync in-memory array!
+      syncRecordToServer(newRec);
       if (!isAuto) showToast('战略报告已保存至本地书卡库缓存中。');
     }
   }
@@ -3703,6 +3808,7 @@
   function deleteLocalV2(id) {
     const records = getLibraryLocalV2().filter(x => x.id !== id);
     localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+    syncDeleteToServer(id);
     showToast('已从本地缓存中删除记录。');
   }
 
@@ -3820,7 +3926,9 @@
     if (idx !== -1) {
       records[idx].skill_markdown = skillMarkdown;
       records[idx].skillMarkdown = skillMarkdown;
+      records[idx].updatedAt = Date.now();
       localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
+      syncRecordToServer(records[idx]);
     }
   }
 
@@ -4039,6 +4147,8 @@
     if (idx !== -1) {
       records[idx].images_json = imagesJson;
       records[idx].imagesJson = imagesJson;
+      records[idx].updatedAt = Date.now();
+      syncRecordToServer(records[idx]);
       try {
         localStorage.setItem('xiaolu-chaishu-library-v2', JSON.stringify(records));
       } catch (e) {
@@ -4075,7 +4185,7 @@
         let imgUrl = imgs[cardType];
         if (!imgUrl) continue;
         if (!String(imgUrl).startsWith('data:')) {
-          imgUrl = await idbGetImage(imageIdbKey(record.title, cardType));
+          imgUrl = await fetchImageAnywhere(imageIdbKey(record.title, cardType));
           if (!imgUrl) continue;
         }
         galleryItems.push({ record, cardType, imgUrl });
@@ -4656,8 +4766,12 @@
     showToast('示例已填充！点击「🚀 发起深度拆解」即可体验完整流程。');
   });
 
-  // Bootloader V2 startup
-  initSupabase();
+  // Bootloader V2 startup: Supabase first (if configured), then server-side
+  // SQLite storage detection + record reconciliation
+  (async () => {
+    try { await initSupabase(); } catch (e) { console.warn('initSupabase failed:', e); }
+    try { await initServerStorage(); } catch (e) { console.warn('initServerStorage failed:', e); }
+  })();
 </script>
 </body>
 </html>
